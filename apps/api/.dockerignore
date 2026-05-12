@@ -1,0 +1,7 @@
+bin
+tmp
+*.test
+*.out
+.env
+.env.local
+.git

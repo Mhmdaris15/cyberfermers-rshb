@@ -1,0 +1,26 @@
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2.1.4
+    container_name: svoe-surreal
+    user: "0:0"        # write to /data without permission drama on Win named volumes
+    command:
+      - start
+      - --user
+      - ${SURREAL_USER:-root}
+      - --pass
+      - ${SURREAL_PASS:-root}
+      - --bind
+      - 0.0.0.0:8000
+      - rocksdb:/data/svoe.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - surreal_data:/data
+    healthcheck:
+      test: ["CMD", "/surreal", "isready", "--conn", "http://localhost:8000"]
+      interval: 5s
+      retries: 20
+      start_period: 5s
+
+volumes:
+  surreal_data:

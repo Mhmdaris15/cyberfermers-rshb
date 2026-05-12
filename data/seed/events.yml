@@ -1,0 +1,508 @@
+# =====================================================================
+#  Curated event knowledge base for the Russian agri-food marketplace.
+#  ~40 events across 6 categories. Dates target 2026, but cycle annually.
+#  Used by: cmd/seed → table `event` in SurrealDB.
+# =====================================================================
+
+# ----- STATE / SECULAR HOLIDAYS -------------------------------------------
+- slug: new-year
+  title: "Новый год"
+  type: holiday
+  type_detail: secular_state
+  start_date: 2026-12-20
+  end_date: 2027-01-08
+  recurrence: annual
+  prep_window_days: 30
+  audience: [gourmets, parents, gift_buyers]
+  product_tags: [goose, duck, sturgeon, caviar, sweets, gift_basket, honey, jam, wine, cheese_aged]
+  categories: ["Мясо и птица", "Рыба и морепродукты", "Сладости", "Напитки", "Сыры"]
+  channels: [storefront, push, story, blog, recipe, chat, social]
+  themes: ["Новогодний стол", "Корпоративные подарки", "Семейный праздник"]
+  color: "#E53935"
+  icon: "tree"
+
+- slug: orthodox-christmas
+  title: "Рождество"
+  type: holiday
+  type_detail: religious_orthodox
+  start_date: 2027-01-07
+  end_date: 2027-01-08
+  recurrence: annual
+  prep_window_days: 14
+  audience: [parents, gourmets]
+  product_tags: [goose, kutia, honey, dried_fruits, sochnik, jam, sweets]
+  categories: ["Мясо и птица", "Сладости", "Бакалея", "Мёд и пчеловодство"]
+  channels: [storefront, push, story, blog, recipe]
+  themes: ["Рождественский стол", "Святки"]
+  color: "#7E57C2"
+
+- slug: tatiana-day
+  title: "Татьянин день"
+  type: holiday
+  type_detail: cultural
+  start_date: 2026-01-25
+  end_date: 2026-01-25
+  recurrence: annual
+  prep_window_days: 7
+  audience: [students, gift_buyers]
+  product_tags: [pirog, medovukha, honey, mead, cheese, traditional_dessert]
+  categories: ["Хлеб и выпечка", "Напитки", "Сладости"]
+  channels: [storefront, story, social, blog]
+  color: "#42A5F5"
+
+- slug: defenders-day
+  title: "День защитника Отечества"
+  type: holiday
+  type_detail: secular_state
+  start_date: 2026-02-23
+  end_date: 2026-02-23
+  recurrence: annual
+  prep_window_days: 14
+  audience: [gift_buyers]
+  product_tags: [smoked_meat, jerky, sausage_dry, cheese_aged, mead, gift_basket]
+  categories: ["Мясо и птица", "Сыры", "Напитки", "Бакалея"]
+  channels: [storefront, push, story, blog, social, chat]
+  themes: ["Мужской подарок", "Закусочные сеты"]
+  color: "#455A64"
+
+- slug: maslenitsa
+  title: "Масленица"
+  type: holiday
+  type_detail: traditional
+  start_date: 2026-02-16
+  end_date: 2026-02-22
+  recurrence: moving
+  prep_window_days: 14
+  audience: [parents, gourmets, healthy]
+  product_tags: [butter_cultured, sour_cream, honey, jam, blini_flour, caviar, cottage_cheese, condensed_milk]
+  categories: ["Яйца и молочные продукты", "Бакалея", "Рыба и морепродукты", "Сладости"]
+  channels: [storefront, push, story, blog, recipe, chat]
+  themes: ["Блинная неделя", "Сырная неделя"]
+  color: "#FB8C00"
+  icon: "blini"
+
+- slug: int-womens-day
+  title: "8 марта"
+  type: holiday
+  type_detail: secular_state
+  start_date: 2026-03-08
+  end_date: 2026-03-08
+  recurrence: annual
+  prep_window_days: 14
+  audience: [gift_buyers, gourmets]
+  product_tags: [flowers_edible, berries, chocolate, honey, cheese, wine, gift_basket, pastry_premium]
+  categories: ["Сладости", "Сыры", "Овощи и фрукты", "Напитки"]
+  channels: [storefront, push, story, blog, social]
+  themes: ["Подарок маме", "Букет-съедобный"]
+  color: "#EC407A"
+
+- slug: cosmonautics-day
+  title: "День космонавтики"
+  type: holiday
+  type_detail: secular_state
+  start_date: 2026-04-12
+  end_date: 2026-04-12
+  recurrence: annual
+  prep_window_days: 7
+  audience: [students, gift_buyers]
+  product_tags: [granola, energy_bar, dried_fruits, nuts, honey, tea, herbal_blend]
+  categories: ["Сладости", "Напитки", "Бакалея"]
+  channels: [storefront, story, blog, social]
+  color: "#26A69A"
+
+- slug: orthodox-easter
+  title: "Пасха"
+  type: holiday
+  type_detail: religious_orthodox
+  start_date: 2026-04-12
+  end_date: 2026-04-19
+  recurrence: moving
+  prep_window_days: 21
+  audience: [parents, gourmets, healthy]
+  product_tags: [eggs, kulich, paskha, cottage_cheese, lamb, herbs_spring, butter, sour_cream, honey, raisins_premium]
+  categories: ["Яйца и молочные продукты", "Хлеб и выпечка", "Мясо и птица", "Сладости"]
+  channels: [storefront, push, story, blog, recipe, chat, social, email]
+  themes: ["Пасхальный стол", "Куличи и пасха", "Светлая седмица"]
+  color: "#D4A017"
+  icon: "egg"
+
+- slug: victory-day
+  title: "День Победы"
+  type: holiday
+  type_detail: secular_state
+  start_date: 2026-05-09
+  end_date: 2026-05-09
+  recurrence: annual
+  prep_window_days: 14
+  audience: [parents, gift_buyers]
+  product_tags: [shashlik, marinade, vegetables_grill, pickles, mead, kvass, bread_artisan]
+  categories: ["Мясо и птица", "Овощи и фрукты", "Напитки", "Хлеб и выпечка"]
+  channels: [storefront, push, story, blog, recipe, social]
+  themes: ["Пикник 9 мая", "Семейный обед"]
+  color: "#C62828"
+
+- slug: russia-day
+  title: "День России"
+  type: holiday
+  type_detail: secular_state
+  start_date: 2026-06-12
+  end_date: 2026-06-12
+  recurrence: annual
+  prep_window_days: 7
+  audience: [parents, gourmets]
+  product_tags: [strawberry, sturgeon, caviar, honey, bread_artisan, kvass]
+  categories: ["Овощи и фрукты", "Рыба и морепродукты", "Мёд и пчеловодство"]
+  channels: [storefront, story, blog, social]
+  color: "#1565C0"
+
+- slug: family-day
+  title: "День семьи, любви и верности"
+  type: holiday
+  type_detail: secular_state
+  start_date: 2026-07-08
+  end_date: 2026-07-08
+  recurrence: annual
+  prep_window_days: 10
+  audience: [parents, gift_buyers]
+  product_tags: [berries, jam, honey, pirog, kids_friendly, cottage_cheese]
+  categories: ["Овощи и фрукты", "Сладости", "Мёд и пчеловодство"]
+  channels: [storefront, story, blog, social]
+  themes: ["Ромашковый стол"]
+  color: "#FFB300"
+
+- slug: knowledge-day
+  title: "День знаний"
+  type: holiday
+  type_detail: cultural
+  start_date: 2026-09-01
+  end_date: 2026-09-01
+  recurrence: annual
+  prep_window_days: 21
+  audience: [parents, healthy]
+  product_tags: [granola, honey, nuts, dried_fruits, kids_friendly, fruit_lunchbox]
+  categories: ["Сладости", "Бакалея", "Овощи и фрукты"]
+  channels: [storefront, push, story, blog, email]
+  themes: ["Школьный завтрак", "Полезный перекус"]
+  color: "#3949AB"
+
+- slug: unity-day
+  title: "День народного единства"
+  type: holiday
+  type_detail: secular_state
+  start_date: 2026-11-04
+  end_date: 2026-11-04
+  recurrence: annual
+  prep_window_days: 10
+  audience: [gift_buyers, gourmets]
+  product_tags: [regional_specialty, cheese_artisan, honey, mead, smoked_fish]
+  categories: ["Сыры", "Рыба и морепродукты", "Мёд и пчеловодство"]
+  channels: [storefront, story, blog]
+  color: "#5E35B1"
+
+# ----- ORTHODOX / TRADITIONAL "SPAS" --------------------------------------
+- slug: honey-spas
+  title: "Медовый Спас"
+  type: holiday
+  type_detail: religious_orthodox
+  start_date: 2026-08-14
+  end_date: 2026-08-14
+  recurrence: annual
+  prep_window_days: 10
+  audience: [healthy, gourmets, parents]
+  product_tags: [honey, propolis, royal_jelly, beeswax, mead, pirog_with_honey]
+  categories: ["Мёд и пчеловодство", "Хлеб и выпечка", "Сладости"]
+  channels: [storefront, push, story, blog, recipe]
+  themes: ["Освящение мёда"]
+  color: "#F9A825"
+
+- slug: apple-spas
+  title: "Яблочный Спас"
+  type: holiday
+  type_detail: religious_orthodox
+  start_date: 2026-08-19
+  end_date: 2026-08-19
+  recurrence: annual
+  prep_window_days: 10
+  audience: [parents, healthy]
+  product_tags: [apple, apple_pie, jam_apple, vinegar_apple, cider, honey]
+  categories: ["Овощи и фрукты", "Сладости", "Напитки", "Бакалея"]
+  channels: [storefront, story, blog, recipe]
+  color: "#8BC34A"
+
+- slug: nut-spas
+  title: "Ореховый Спас"
+  type: holiday
+  type_detail: religious_orthodox
+  start_date: 2026-08-29
+  end_date: 2026-08-29
+  recurrence: annual
+  prep_window_days: 7
+  audience: [healthy, gourmets]
+  product_tags: [walnut, hazelnut, pine_nut, nut_butter, honey, granola]
+  categories: ["Бакалея", "Сладости", "Мёд и пчеловодство"]
+  channels: [storefront, story, blog]
+  color: "#6D4C41"
+
+# ----- SEASONS -------------------------------------------------------------
+- slug: spring-greens
+  title: "Первая весенняя зелень"
+  type: season
+  type_detail: spring
+  start_date: 2026-04-01
+  end_date: 2026-05-31
+  recurrence: annual
+  prep_window_days: 7
+  audience: [healthy, gourmets]
+  product_tags: [sorrel, nettle, ramson, radish, green_onion, dill, spinach, microgreen]
+  categories: ["Овощи и фрукты", "Заморозка"]
+  channels: [storefront, story, blog, recipe]
+  themes: ["Зелёные щи", "Витамины весны"]
+  color: "#66BB6A"
+
+- slug: summer-berries
+  title: "Ягодный сезон"
+  type: season
+  type_detail: summer
+  start_date: 2026-06-01
+  end_date: 2026-08-15
+  recurrence: annual
+  prep_window_days: 14
+  audience: [parents, healthy, gourmets]
+  product_tags: [strawberry, raspberry, blueberry, blackcurrant, redcurrant, cherry, gooseberry, jam_berry]
+  categories: ["Овощи и фрукты", "Сладости", "Напитки"]
+  channels: [storefront, push, story, blog, recipe, social]
+  themes: ["Свежий урожай", "Ягоды без химии"]
+  color: "#D81B60"
+
+- slug: mushroom-season
+  title: "Грибной сезон"
+  type: season
+  type_detail: autumn
+  start_date: 2026-08-15
+  end_date: 2026-10-31
+  recurrence: annual
+  prep_window_days: 14
+  audience: [gourmets, healthy]
+  product_tags: [porcini, chanterelle, oyster_mushroom, saffron_milk_cap, mushroom_dried, mushroom_pickled]
+  categories: ["Заморозка", "Бакалея", "Овощи и фрукты"]
+  channels: [storefront, story, blog, recipe]
+  color: "#8D6E63"
+
+- slug: autumn-harvest
+  title: "Осенний урожай"
+  type: season
+  type_detail: autumn
+  start_date: 2026-09-01
+  end_date: 2026-10-31
+  recurrence: annual
+  prep_window_days: 14
+  audience: [parents, healthy, gourmets]
+  product_tags: [pumpkin, apple_autumn, cranberry, lingonberry, beetroot, carrot, cabbage_late]
+  categories: ["Овощи и фрукты", "Заморозка"]
+  channels: [storefront, push, story, blog, recipe]
+  themes: ["Дары осени", "Заготовки"]
+  color: "#EF6C00"
+
+- slug: winter-pickles
+  title: "Зимние соленья и квашения"
+  type: season
+  type_detail: winter
+  start_date: 2026-12-01
+  end_date: 2027-02-28
+  recurrence: annual
+  prep_window_days: 7
+  audience: [gourmets, parents]
+  product_tags: [sauerkraut, pickled_cucumber, pickled_tomato, soaked_apple, pickled_mushroom, marinade]
+  categories: ["Овощи и фрукты", "Заморозка", "Бакалея"]
+  channels: [storefront, story, blog, recipe]
+  themes: ["Русская зима"]
+  color: "#26C6DA"
+
+# ----- THEMED WEEKS --------------------------------------------------------
+- slug: cheese-week
+  title: "Неделя сыра"
+  type: themed_week
+  start_date: 2026-05-15
+  end_date: 2026-05-22
+  recurrence: configurable
+  prep_window_days: 10
+  audience: [gourmets, gift_buyers]
+  product_tags: [cheese, cheese_aged, cheese_blue, cheese_fresh, wine, honey, bread_artisan, nuts]
+  categories: ["Сыры", "Напитки", "Мёд и пчеловодство", "Хлеб и выпечка"]
+  channels: [storefront, push, story, blog, recipe, social]
+  themes: ["Сырная тарелка", "Винные пейринги"]
+  color: "#FFCA28"
+
+- slug: ferment-week
+  title: "Ферментированная неделя"
+  type: themed_week
+  start_date: 2026-03-09
+  end_date: 2026-03-15
+  recurrence: configurable
+  prep_window_days: 7
+  audience: [healthy, gourmets]
+  product_tags: [kombucha, kefir, sauerkraut, kimchi, fermented_vegetables, sourdough, yogurt_live]
+  categories: ["Напитки", "Яйца и молочные продукты", "Овощи и фрукты", "Хлеб и выпечка"]
+  channels: [storefront, story, blog, recipe]
+  color: "#7CB342"
+
+- slug: healthy-breakfast-week
+  title: "Неделя полезных завтраков"
+  type: themed_week
+  start_date: 2026-02-02
+  end_date: 2026-02-08
+  recurrence: configurable
+  prep_window_days: 7
+  audience: [healthy, parents]
+  product_tags: [granola, oatmeal, honey, nuts, dried_fruits, yogurt_live, cottage_cheese, kefir, berries]
+  categories: ["Бакалея", "Яйца и молочные продукты", "Сладости"]
+  channels: [storefront, push, story, blog, recipe, email]
+  color: "#00ACC1"
+
+- slug: bbq-week
+  title: "Неделя BBQ"
+  type: themed_week
+  start_date: 2026-06-01
+  end_date: 2026-06-07
+  recurrence: configurable
+  prep_window_days: 10
+  audience: [gourmets, parents]
+  product_tags: [shashlik, marinade, sausage_grill, lamb, beef_steak, vegetables_grill, bbq_sauce]
+  categories: ["Мясо и птица", "Овощи и фрукты", "Бакалея"]
+  channels: [storefront, push, story, blog, recipe, social]
+  color: "#BF360C"
+
+- slug: vegan-week
+  title: "Веганская неделя"
+  type: themed_week
+  start_date: 2026-11-01
+  end_date: 2026-11-07
+  recurrence: configurable
+  prep_window_days: 10
+  audience: [healthy]
+  product_tags: [plant_milk, legumes, nuts, mushrooms, vegetables, fruits, tofu, seitan]
+  categories: ["Бакалея", "Овощи и фрукты", "Напитки"]
+  channels: [storefront, story, blog, recipe]
+  color: "#43A047"
+
+# ----- PROFESSIONAL DAYS ---------------------------------------------------
+- slug: chef-day
+  title: "Международный день шеф-повара"
+  type: professional
+  start_date: 2026-10-20
+  end_date: 2026-10-20
+  recurrence: annual
+  prep_window_days: 10
+  audience: [gourmets]
+  product_tags: [premium, rare, truffle, caviar_premium, aged, milk_fed]
+  categories: ["Мясо и птица", "Рыба и морепродукты", "Сыры"]
+  channels: [storefront, story, blog, chat]
+  color: "#212121"
+
+- slug: farmer-day
+  title: "День работника сельского хозяйства"
+  type: professional
+  start_date: 2026-10-11
+  end_date: 2026-10-11
+  recurrence: annual
+  prep_window_days: 14
+  audience: [gourmets, healthy, parents]
+  product_tags: [seasonal, harvest, regional_specialty, premium]
+  categories: ["Овощи и фрукты", "Мясо и птица", "Сыры", "Мёд и пчеловодство"]
+  channels: [storefront, push, story, blog, social]
+  themes: ["Спасибо фермеру"]
+  color: "#558B2F"
+
+- slug: world-vegan-day
+  title: "Всемирный день вегана"
+  type: professional
+  start_date: 2026-11-01
+  end_date: 2026-11-01
+  recurrence: annual
+  prep_window_days: 14
+  audience: [healthy]
+  product_tags: [vegan, plant_milk, vegetables, fruits, nuts, legumes]
+  categories: ["Бакалея", "Овощи и фрукты", "Напитки"]
+  channels: [storefront, story, blog, social]
+  color: "#2E7D32"
+
+- slug: world-bread-day
+  title: "Всемирный день хлеба"
+  type: professional
+  start_date: 2026-10-16
+  end_date: 2026-10-16
+  recurrence: annual
+  prep_window_days: 7
+  audience: [parents, gourmets, healthy]
+  product_tags: [bread_artisan, sourdough, rye, wholegrain, butter_cultured]
+  categories: ["Хлеб и выпечка", "Яйца и молочные продукты"]
+  channels: [storefront, story, blog]
+  color: "#A1887F"
+
+# ----- MARKETPLACE-LED TRENDS ---------------------------------------------
+- slug: subscription-launch
+  title: "Запуск подписки Своё Родное"
+  type: trend
+  start_date: 2026-05-01
+  end_date: 2026-05-15
+  recurrence: configurable
+  prep_window_days: 7
+  audience: [parents, healthy, gourmets]
+  product_tags: [subscription_friendly, weekly_box, fresh, kids_friendly]
+  categories: ["Овощи и фрукты", "Яйца и молочные продукты", "Хлеб и выпечка"]
+  channels: [storefront, push, story, email, chat]
+  color: "#00897B"
+
+- slug: regional-spotlight-moscow
+  title: "Подмосковные фермеры в центре внимания"
+  type: trend
+  start_date: 2026-05-20
+  end_date: 2026-05-31
+  recurrence: configurable
+  prep_window_days: 7
+  audience: [gourmets, healthy]
+  product_tags: [moscow_region, local, fresh, regional_specialty]
+  categories: ["Овощи и фрукты", "Сыры", "Мясо и птица"]
+  channels: [storefront, story, blog, social]
+  color: "#1E88E5"
+
+- slug: gift-collection-launch
+  title: "Подарочные наборы — премиум коллекция"
+  type: trend
+  start_date: 2026-12-01
+  end_date: 2026-12-31
+  recurrence: configurable
+  prep_window_days: 21
+  audience: [gift_buyers, gourmets]
+  product_tags: [gift_basket, premium, hand_packed, ribbon]
+  categories: ["Сладости", "Сыры", "Мёд и пчеловодство", "Напитки"]
+  channels: [storefront, push, story, blog, social, email]
+  color: "#6A1B9A"
+
+- slug: kids-healthy-snack
+  title: "Тренд: полезные перекусы для детей"
+  type: trend
+  start_date: 2026-08-15
+  end_date: 2026-09-15
+  recurrence: configurable
+  prep_window_days: 14
+  audience: [parents]
+  product_tags: [kids_friendly, no_sugar, fruit_lunchbox, granola_kids, yogurt_live]
+  categories: ["Сладости", "Яйца и молочные продукты", "Овощи и фрукты"]
+  channels: [storefront, push, story, blog, email]
+  color: "#FFCA28"
+
+- slug: lent-fasting
+  title: "Великий пост"
+  type: season
+  type_detail: fasting
+  start_date: 2026-02-23
+  end_date: 2026-04-11
+  recurrence: moving
+  prep_window_days: 14
+  audience: [healthy]
+  product_tags: [legumes, mushrooms, vegetables, fruits, nuts, plant_milk, sourdough, dried_fruits]
+  categories: ["Бакалея", "Овощи и фрукты", "Заморозка"]
+  channels: [storefront, story, blog, recipe]
+  themes: ["Постное меню"]
+  color: "#7E57C2"

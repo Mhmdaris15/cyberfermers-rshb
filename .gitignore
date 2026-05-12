@@ -1,0 +1,39 @@
+.env
+.env.local
+*.log
+
+# node
+node_modules/
+dist/
+.vite/
+.parcel-cache/
+.cache/
+coverage/
+
+# go
+apps/api/bin/
+apps/api/tmp/
+*.test
+*.out
+
+# python (legacy scripts)
+__pycache__/
+*.pyc
+
+# editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# surreal
+data/surreal/
+
+# raw drops we don't commit
+data/raw/*.xlsx
+!data/raw/.gitkeep
+
+# build artifacts
+build/
+out/
