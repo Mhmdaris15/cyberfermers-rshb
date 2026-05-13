@@ -23,10 +23,10 @@ ENV NPM_CONFIG_AUDIT=false \
     NPM_CONFIG_FETCH_RETRY_MINTIMEOUT=20000 \
     NPM_CONFIG_FETCH_RETRY_MAXTIMEOUT=120000
 
-COPY package.json package-lock.json* ./
+COPY apps/web/package.json apps/web/package-lock.json* ./
 RUN npm install --no-audit --no-fund --legacy-peer-deps
 
-COPY . .
+COPY apps/web/ .
 
 ARG VITE_API_URL=
 ARG VITE_APP_NAME="Свое Родное · Calendar"
@@ -41,7 +41,7 @@ RUN apk add --no-cache wget && \
     addgroup -g 1000 svoe && adduser -u 1000 -G svoe -D -s /sbin/nologin svoe
 
 # Replace default nginx site with our SPA + /api proxy config.
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
 
 # Static build output. nginx runs as root by default to bind :80; we drop
 # privileges for the worker processes only (nginx does this internally).

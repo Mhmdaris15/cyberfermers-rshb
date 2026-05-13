@@ -85,8 +85,8 @@ services:
 
   web:
     build:
-      context: ./apps/web
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./apps/web/Dockerfile
       args:
         # Vite injects this at BUILD time, not runtime. Bake it to whatever
         # public URL terminates TLS in front of the stack. For same-origin
