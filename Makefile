@@ -1,7 +1,7 @@
 # Hybrid dev: SurrealDB in Docker, API + Web native.
 # Run all targets from the repo root.
 
-.PHONY: db db-stop db-logs db-shell api web import seed tag-products dev down clean help
+.PHONY: db db-stop db-logs db-shell api web import seed tag-products dev down clean help devops-run devops-build devops-tidy
 
 help:
 	@echo "make db             - start SurrealDB container (port 8000)"
@@ -15,6 +15,9 @@ help:
 	@echo "make tag-products   - run rule + Gemini tagger over all SKUs"
 	@echo "make dev            - start db, then print follow-up commands"
 	@echo "make clean          - down -v (wipe surreal volume)"
+	@echo "make devops-tidy    - go mod tidy for the devops operator"
+	@echo "make devops-run     - run devops operator natively (loads .env.devops)"
+	@echo "make devops-build   - build static devops binary into apps/devops/bin/devops"
 
 # ---- Database --------------------------------------------------------
 db:
@@ -66,3 +69,17 @@ down:
 clean:
 	docker compose down -v
 	@echo "SurrealDB volume wiped."
+
+# ---- DevOps operator (Go, native) -----------------------------------
+# Internal service that wraps Coolify API for AI-driven deploys.
+# See apps/devops/README.md.
+devops-tidy:
+	cd apps/devops && go mod tidy
+
+devops-run:
+	@test -f .env.devops || (echo "missing .env.devops — copy .env.devops.example first" && exit 1)
+	set -a && . ./.env.devops && set +a && cd apps/devops && go run ./cmd/server
+
+devops-build:
+	cd apps/devops && CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o bin/devops ./cmd/server
+	@echo "built apps/devops/bin/devops"

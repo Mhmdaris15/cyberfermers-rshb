@@ -9,10 +9,13 @@ apps/api/bin/
 apps/api/tmp/
 apps/api/*.test
 apps/api/*.out
+apps/devops/bin/
+apps/devops/tmp/
 
 # ---- secrets (never in image) -----------------------------------
 .env
 .env.production
+.env.devops
 .env.*.local
 
 # ---- large operator-supplied data (docker cp'd in separately) ---
