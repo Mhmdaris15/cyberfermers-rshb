@@ -1,0 +1,33 @@
+# ---- node -------------------------------------------------------
+apps/web/node_modules/
+apps/web/dist/
+apps/web/.vite/
+apps/web/coverage/
+
+# ---- go build artifacts -----------------------------------------
+apps/api/bin/
+apps/api/tmp/
+apps/api/*.test
+apps/api/*.out
+
+# ---- secrets (never in image) -----------------------------------
+.env
+.env.production
+.env.*.local
+
+# ---- large operator-supplied data (docker cp'd in separately) ---
+data/raw/*.xlsx
+
+# ---- surreal volume (local dev only) ----------------------------
+data/surreal/
+
+# ---- git and editor ---------------------------------------------
+.git/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ---- docs (not needed at runtime) -------------------------------
+docs/

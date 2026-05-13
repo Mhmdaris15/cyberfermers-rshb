@@ -25,12 +25,13 @@ RUN apk add --no-cache git ca-certificates
 
 # Cache go.mod / go.sum independently of source so module downloads are
 # reused across image builds when only application code changes.
-COPY go.mod go.sum* ./
+# Paths are relative to the repo-root build context (context: .).
+COPY apps/api/go.mod apps/api/go.sum* ./
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go mod download
 
-COPY . .
+COPY apps/api/ .
 
 # Build all 5 binaries in one RUN to share the module cache.
 RUN --mount=type=cache,target=/go/pkg/mod \
