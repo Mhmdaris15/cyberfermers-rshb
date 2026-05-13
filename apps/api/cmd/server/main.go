@@ -14,6 +14,8 @@ import (
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/handlers"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/middleware"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/ai"
+	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/chat"
+	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/insights"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/plan"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/recommendation"
 )
@@ -40,6 +42,8 @@ func main() {
 	contentSvc := ai.NewContentService(aiClient)
 	reco := recommendation.New(repo)
 	planSvc := plan.New(repo)
+	insightsEngine := insights.New(repo)
+	chatSvc := chat.New(repo, aiClient, insightsEngine)
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
@@ -54,6 +58,8 @@ func main() {
 
 	handlers.Register(r, &handlers.Deps{
 		Repo: repo, Reco: reco, Content: contentSvc, Plan: planSvc,
+		Insights:    insightsEngine,
+		ChatSvc:     chatSvc,
 		GeminiModel: cfg.GeminiModel,
 	})
 

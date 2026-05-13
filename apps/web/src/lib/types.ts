@@ -64,6 +64,8 @@ export interface PredictedLift {
   revenue_delta: number;
   confidence: number;
   assumptions: Assumption[];
+  /** Per-channel Δorders attribution; values sum to orders_delta. */
+  channel_mix?: Record<string, number>;
 }
 
 export interface Promo {
@@ -86,6 +88,8 @@ export interface Suggestion {
   predicted_lift: PredictedLift;
   score: number;
   status: "proposed" | "planned" | "live" | "completed";
+  /** Map keyed by product.id (full record id, e.g. "product:abc"). */
+  product_reasons?: Record<string, string[]>;
 }
 
 export interface CalendarBuild {

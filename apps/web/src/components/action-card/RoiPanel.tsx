@@ -3,6 +3,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Info, TrendingUp, Coins } from "lucide-react";
 import { formatInt, formatRUB } from "@/lib/utils";
 import type { PredictedLift } from "@/lib/types";
+import { motion } from "framer-motion";
 
 interface RoiPanelProps {
   lift: PredictedLift;
@@ -20,9 +21,13 @@ export function RoiPanel({ lift }: RoiPanelProps) {
           <Kpi icon={<Info className="h-4 w-4" />} label="Уверенность" value={`${Math.round(lift.confidence * 100)}%`} tone="plum" />
         </div>
 
+        {lift.channel_mix && Object.keys(lift.channel_mix).length > 0 && (
+          <ChannelMixBar mix={lift.channel_mix} total={lift.orders_delta} />
+        )}
+
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <h4 className="text-xs uppercase tracking-widest text-ink-mute">Допущения модели</h4>
+            <h4 className="smallcaps text-[10px] text-ink-mute">Допущения модели</h4>
             <span className="text-[10px] text-ink-mute">все числа конфигурируются в roi.go</span>
           </div>
           <ul className="divide-y divide-line/60">
@@ -54,6 +59,75 @@ export function RoiPanel({ lift }: RoiPanelProps) {
       </CardContent>
     </Card>
   );
+}
+
+// Decomposes Δorders into per-channel contribution. The bar reads left→right
+// in proportion to each channel's (reach × lift) share of the total.
+function ChannelMixBar({ mix, total }: { mix: Record<string, number>; total: number }) {
+  const entries = Object.entries(mix)
+    .filter(([, v]) => v > 0)
+    .sort((a, b) => b[1] - a[1]);
+  const totalShown = entries.reduce((n, [, v]) => n + v, 0) || total || 1;
+
+  // Stable colour per channel — same channel always gets the same hue.
+  const tone: Record<string, string> = {
+    storefront: "leaf",
+    push:       "amber",
+    story:      "plum",
+    blog:       "sky",
+    recipe:     "rust",
+    chat:       "leaf",
+    social:     "amber",
+    email:      "sky",
+  };
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <h4 className="smallcaps text-[10px] text-ink-mute">Вклад каналов в прогноз</h4>
+        <span className="text-[10px] text-ink-mute font-mono tnum">{formatInt(total)} заказов</span>
+      </div>
+      <div className="flex h-2.5 w-full overflow-hidden rounded-full border border-line/60 bg-bg-elevated">
+        {entries.map(([ch, v], i) => {
+          const pct = (v / totalShown) * 100;
+          const c = tone[ch] ?? "leaf";
+          return (
+            <motion.div
+              key={ch}
+              initial={{ width: 0 }}
+              animate={{ width: `${pct}%` }}
+              transition={{ delay: i * 0.06, duration: 0.55, ease: [0.2, 0.65, 0.2, 1] }}
+              style={{ background: `hsl(var(--${c}))` }}
+              title={`${ruChannel(ch)}: +${v.toFixed(1)} заказов`}
+            />
+          );
+        })}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-ink-dim">
+        {entries.map(([ch, v]) => {
+          const c = tone[ch] ?? "leaf";
+          return (
+            <div key={ch} className="inline-flex items-center gap-1.5">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ background: `hsl(var(--${c}))` }}
+                aria-hidden
+              />
+              <span>{ruChannel(ch)}</span>
+              <span className="font-mono tnum text-ink-mute">+{v.toFixed(1)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ruChannel(ch: string): string {
+  return ({
+    storefront: "витрина", push: "пуш", story: "сторис", blog: "блог",
+    recipe: "рецепт", chat: "чат", social: "соцсети", email: "e-mail",
+  } as Record<string, string>)[ch] ?? ch;
 }
 
 function Kpi({ icon, label, value, tone }: { icon: React.ReactNode; label: string; value: string; tone: "leaf" | "amber" | "plum" }) {

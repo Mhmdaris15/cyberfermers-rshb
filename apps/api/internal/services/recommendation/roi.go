@@ -144,10 +144,24 @@ func EstimateLift(ev models.Event, farmer models.Farmer, products []MatchResult,
 	promo := PromoSuggest(ev)
 	deltaRevenue := deltaOrders * AvgBasketRUB * (1 - float64(promo.DiscountPct)/100.0)
 
+	// Channel mix: attribute deltaOrders proportionally to each channel's
+	// (reach × lift) contribution. Sum across channels equals deltaOrders.
+	mix := make(map[string]float64, len(channels))
+	if chSum > 0 {
+		for _, ch := range channels {
+			coef := channelReach[ch] * lifts[ch]
+			if coef <= 0 {
+				continue
+			}
+			mix[ch] = round2(deltaOrders * (coef / chSum))
+		}
+	}
+
 	return models.PredictedLift{
 		OrdersDelta:  round1(deltaOrders),
 		RevenueDelta: round0(deltaRevenue),
 		Confidence:   round2(0.55 + 0.3*div - 0.1),
+		ChannelMix:   mix,
 		Assumptions: []models.Assumption{
 			{Label: "Базовый поток заказов", Value: BaselineOrdersPerDay, Unit: "заказ/день",
 				Note: "Среднее по маркетплейсу (10к заказов / 10к фермеров)."},

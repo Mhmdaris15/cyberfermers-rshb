@@ -34,14 +34,32 @@ func NewClient(apiKey, model, embed string) *Client {
 
 // --- types --------------------------------------------------------------
 
-type part struct {
-	Text string `json:"text,omitempty"`
+// Part is exported so the chat package can compose multi-turn histories with
+// mixed text + functionCall + functionResponse segments.
+type Part struct {
+	Text             string            `json:"text,omitempty"`
+	FunctionCall     *FunctionCall     `json:"functionCall,omitempty"`
+	FunctionResponse *FunctionResponse `json:"functionResponse,omitempty"`
 }
 
-type content struct {
-	Role  string `json:"role,omitempty"`
-	Parts []part `json:"parts"`
+type FunctionCall struct {
+	Name string         `json:"name"`
+	Args map[string]any `json:"args,omitempty"`
 }
+
+type FunctionResponse struct {
+	Name     string         `json:"name"`
+	Response map[string]any `json:"response,omitempty"`
+}
+
+type Content struct {
+	Role  string `json:"role,omitempty"` // "user" | "model" | "function"
+	Parts []Part `json:"parts"`
+}
+
+// keep internal aliases for the existing structured-JSON path
+type part = Part
+type content = Content
 
 type generationConfig struct {
 	Temperature      float64 `json:"temperature,omitempty"`
@@ -51,10 +69,22 @@ type generationConfig struct {
 	ResponseSchema   any     `json:"responseSchema,omitempty"`
 }
 
+// ToolDecl is one function-tool declaration, in Gemini's wire shape.
+type ToolDecl struct {
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Parameters  map[string]any `json:"parameters"`
+}
+
+type tool struct {
+	FunctionDeclarations []ToolDecl `json:"functionDeclarations"`
+}
+
 type generateReq struct {
 	SystemInstruction *content         `json:"systemInstruction,omitempty"`
 	Contents          []content        `json:"contents"`
 	GenerationConfig  generationConfig `json:"generationConfig"`
+	Tools             []tool           `json:"tools,omitempty"`
 }
 
 type generateResp struct {
@@ -100,6 +130,59 @@ func (c *Client) GenerateJSON(ctx context.Context, system, user string, schema a
 		return err
 	}
 	return json.Unmarshal([]byte(raw), out)
+}
+
+// ChatTurn returns the next message from Gemini given the full history +
+// declared tools. The caller is responsible for executing any FunctionCall
+// returned (one tool per turn) and looping back with a functionResponse Part.
+//
+// Multi-turn shape:
+//   1. user message → call ChatTurn(history, tools)
+//   2. response has Parts=[FunctionCall] → execute → append functionResponse
+//      → call ChatTurn again
+//   3. response has Parts=[Text] → done
+func (c *Client) ChatTurn(ctx context.Context, system string, history []Content, tools []ToolDecl) (Content, error) {
+	if c.APIKey == "" {
+		return Content{}, errors.New("GEMINI_API_KEY missing")
+	}
+	body := generateReq{
+		Contents: history,
+		GenerationConfig: generationConfig{
+			Temperature:     0.4,
+			TopP:            0.9,
+			MaxOutputTokens: 1024,
+		},
+	}
+	if system != "" {
+		body.SystemInstruction = &Content{Parts: []Part{{Text: system}}}
+	}
+	if len(tools) > 0 {
+		body.Tools = []tool{{FunctionDeclarations: tools}}
+	}
+	url := fmt.Sprintf("%s/models/%s:generateContent?key=%s", apiBase, c.Model, c.APIKey)
+	buf, _ := json.Marshal(body)
+	req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(buf))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return Content{}, err
+	}
+	defer resp.Body.Close()
+	rb, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 300 {
+		return Content{}, fmt.Errorf("gemini chat http %d: %s", resp.StatusCode, string(rb))
+	}
+	var gr generateResp
+	if err := json.Unmarshal(rb, &gr); err != nil {
+		return Content{}, err
+	}
+	if gr.Error != nil {
+		return Content{}, fmt.Errorf("gemini chat: %s", gr.Error.Message)
+	}
+	if len(gr.Candidates) == 0 {
+		return Content{}, errors.New("gemini chat: empty response")
+	}
+	return gr.Candidates[0].Content, nil
 }
 
 // GenerateText is a free-form generation. Avoid in production paths; use

@@ -144,6 +144,34 @@
     font-variant-caps: all-small-caps;
     letter-spacing: 0.12em;
   }
+  /* Live-on-air pulsing border for the kanban "Live" column. */
+  .live-glow {
+    position: relative;
+  }
+  .live-glow::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background: linear-gradient(120deg,
+      hsl(var(--amber) / 0.6),
+      hsl(var(--rust) / 0.5),
+      hsl(var(--amber) / 0.6));
+    background-size: 200% 200%;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    animation: live-pan 3.6s linear infinite;
+    pointer-events: none;
+  }
+  @keyframes live-pan {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+
   /* Vertical typographic divider — adds editorial rhythm to KPI rows. */
   .divider-v {
     position: relative;

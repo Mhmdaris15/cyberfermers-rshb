@@ -13,10 +13,15 @@ import { ActionSheet } from "./ActionSheet";
 import type { Suggestion } from "@/lib/types";
 import { formatInt, formatRUB } from "@/lib/utils";
 import { CalendarDays, Layers3, Sparkles, TrendingUp } from "lucide-react";
+import { AiBootSequence, useAiBootGate } from "@/components/layout/AiBootSequence";
+import { ExecutiveSummary } from "@/components/layout/ExecutiveSummary";
+import { MiniStrip } from "@/components/calendar/MiniStrip";
+import { ForecastCurve } from "@/components/charts/ForecastCurve";
 
 export function Dashboard() {
   const { farmerId = "10060" } = useParams();
   const [open, setOpen] = useState<Suggestion | null>(null);
+  const boot = useAiBootGate(farmerId);
 
   const farmer = useQuery({ queryKey: ["farmer", farmerId], queryFn: () => getFarmer(farmerId) });
   const products = useQuery({ queryKey: ["products", farmerId], queryFn: () => getFarmerProducts(farmerId) });
@@ -70,6 +75,21 @@ export function Dashboard() {
         </div>
       </motion.section>
 
+      {!cal.isLoading && (
+        <ExecutiveSummary suggestions={cal.data?.suggestions ?? []} />
+      )}
+
+      {!cal.isLoading && (cal.data?.suggestions?.length ?? 0) > 0 && (
+        <ForecastCurve suggestions={cal.data?.suggestions ?? []} horizonDays={60} />
+      )}
+
+      {!cal.isLoading && (cal.data?.events?.length ?? 0) > 0 && (
+        <MiniStrip
+          events={cal.data?.events ?? []}
+          toFullCalendarHref={`/farmer/${farmerId}/calendar`}
+        />
+      )}
+
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-display text-xl font-semibold">Топ-предложения на ближайшие 30 дней</h2>
@@ -95,6 +115,7 @@ export function Dashboard() {
       </section>
 
       <ActionSheet suggestion={open} farmerId={farmerId} onClose={() => setOpen(null)} />
+      <AiBootSequence farmerId={farmerId} visible={boot.visible} onDone={boot.dismiss} />
     </div>
   );
 }

@@ -3,7 +3,7 @@ import { AnimatePresence, motion, Reorder } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty";
-import { formatInt, formatRUB } from "@/lib/utils";
+import { cn, formatInt, formatRUB } from "@/lib/utils";
 import { Sparkles, GripVertical } from "lucide-react";
 import type { PlanCard } from "@/lib/types";
 import { eventTypeMeta } from "@/lib/events";
@@ -50,6 +50,7 @@ function Column({
   cards: PlanCard[];
   onMove?: PlanBoardProps["onMove"];
 }) {
+  const isLive = col.id === "live";
   // Local mirror to keep drag feeling instant. Synced from props on every
   // refetch; we *only* fire onReorder when the order actually changes from
   // the props baseline, to avoid feedback loops with the query cache.
@@ -76,10 +77,19 @@ function Column({
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className={cn("relative flex flex-col gap-3 rounded-2xl p-2", isLive && "live-glow")}>
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <Badge variant={col.tone as any}>{col.label}</Badge>
+          {isLive && (
+            <span className="inline-flex items-center gap-1 text-[11px] text-amber">
+              <span className="relative grid h-1.5 w-1.5">
+                <span className="absolute inset-0 rounded-full bg-amber" />
+                <span className="absolute inset-0 animate-ping rounded-full bg-amber/60" />
+              </span>
+              в эфире
+            </span>
+          )}
           <span className="text-xs text-ink-mute">{items.length}</span>
         </div>
       </div>

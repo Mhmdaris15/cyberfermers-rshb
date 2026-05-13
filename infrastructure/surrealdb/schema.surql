@@ -77,6 +77,7 @@ DEFINE FIELD date_window_start   ON suggestion TYPE datetime;
 DEFINE FIELD date_window_end     ON suggestion TYPE datetime;
 DEFINE FIELD promo               ON suggestion FLEXIBLE TYPE object;        -- { discount_pct, promo_code }
 DEFINE FIELD predicted_lift      ON suggestion FLEXIBLE TYPE object;        -- { orders_delta, revenue_delta, assumptions[] }
+DEFINE FIELD product_reasons     ON suggestion FLEXIBLE TYPE option<object>; -- { product_id: [reason,…] }
 DEFINE FIELD score               ON suggestion TYPE float DEFAULT 0.0;
 DEFINE FIELD status              ON suggestion TYPE string DEFAULT "proposed"; -- proposed | planned | live | completed
 DEFINE FIELD created_at          ON suggestion TYPE datetime DEFAULT time::now();

@@ -55,12 +55,18 @@ func channelGenerators() map[models.Channel]channelGen {
 
 // GenerateAll fans out concurrent Gemini calls for every requested channel.
 // Returns a map[channel] -> raw object (json-shaped) ready to persist.
+//
+// `variant` indexes A/B/C drafts. For variant > 0 we append a short hint to
+// every prompt asking the model to take a meaningfully different angle, while
+// keeping the structured output schema unchanged. Persisted under the same
+// (suggestion, channel, variant) triple — see schema.surql.
 func (s *ContentService) GenerateAll(
 	ctx context.Context,
 	farmer models.Farmer,
 	event models.Event,
 	products []models.Product,
 	channels []models.Channel,
+	variant int,
 ) (map[models.Channel]map[string]any, error) {
 	if s.AI == nil || s.AI.APIKey == "" {
 		return s.fallbackAll(farmer, event, products, channels), nil
@@ -85,6 +91,9 @@ func (s *ContentService) GenerateAll(
 		go func(ch models.Channel, gen channelGen) {
 			defer wg.Done()
 			prompt := gen.build(farmerStr, event.Title, string(event.Type), productsBlock)
+			if variant > 0 {
+				prompt += variantHint(variant)
+			}
 			out := map[string]any{}
 			if err := s.AI.GenerateJSON(ctx, SystemRU, prompt, gen.schema, &out); err != nil {
 				log.Warn().Err(err).Str("channel", string(ch)).Msg("content generation failed; fallback")
@@ -157,6 +166,21 @@ func (s *ContentService) fallbackOne(ch models.Channel, f models.Farmer, ev mode
 		}
 	}
 	return map[string]any{}
+}
+
+// variantHint appends to the prompt for non-zero variants so the model takes
+// a meaningfully different angle without breaking the JSON schema.
+func variantHint(variant int) string {
+	hints := []string{
+		// variant 1
+		"\n\nЭто ВАРИАНТ B. Возьми ДРУГОЙ угол: смести акцент с продукта на повод (или наоборот), используй другую структуру предложения, другую эмоцию. Не повторяй формулировки варианта A.",
+		// variant 2
+		"\n\nЭто ВАРИАНТ C. Попробуй провокационный угол: ставь под сомнение «обычные» подходы к этому событию, упирай на эксклюзивность или редкость предложения.",
+	}
+	if variant-1 < len(hints) {
+		return hints[variant-1]
+	}
+	return fmt.Sprintf("\n\nЭто ВАРИАНТ %d. Сильно отличайся от вариантов 0..%d по тону и структуре.", variant, variant-1)
 }
 
 func productsBullet(ps []models.Product) string {

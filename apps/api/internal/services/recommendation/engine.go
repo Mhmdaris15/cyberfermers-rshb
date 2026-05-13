@@ -55,9 +55,13 @@ func (e *Engine) BuildCalendar(farmerID string, from, to time.Time) (*CalendarBu
 
 		productIDs := make([]string, 0, len(matches))
 		productList := make([]models.Product, 0, len(matches))
+		reasons := make(map[string][]string, len(matches))
 		for _, m := range matches {
 			productIDs = append(productIDs, m.Product.ID)
 			productList = append(productList, m.Product)
+			if len(m.Reasons) > 0 {
+				reasons[m.Product.ID] = m.Reasons
+			}
 		}
 
 		out.Suggestions = append(out.Suggestions, models.Suggestion{
@@ -73,6 +77,7 @@ func (e *Engine) BuildCalendar(farmerID string, from, to time.Time) (*CalendarBu
 			PredictedLift:   lift,
 			Score:           lift.OrdersDelta, // rank by Δorders
 			Status:          "proposed",
+			ProductReasons:  reasons,
 		})
 	}
 	return out, nil

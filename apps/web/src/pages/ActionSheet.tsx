@@ -5,6 +5,7 @@ import { Sparkles, X, Loader2 } from "lucide-react";
 import { Sheet, SheetBody, SheetFooter, SheetHeader } from "@/components/ui/sheet";
 import { ContentTabs } from "@/components/action-card/ContentTabs";
 import { RoiPanel } from "@/components/action-card/RoiPanel";
+import { EventExplain } from "@/components/action-card/EventExplain";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -18,6 +19,23 @@ import {
 } from "@/lib/api";
 import type { GeneratedContent, Suggestion } from "@/lib/types";
 import { eventTypeMeta } from "@/lib/events";
+
+// Reason tokens are emitted by the Go matcher as "tag-match:3", "category:Сыры",
+// "theme:новогодний стол". This translates them to short Russian copy that fits
+// in a chip without losing the underlying signal.
+function reasonLabel(r: string): string {
+  const [kind, ...rest] = r.split(":");
+  const value = rest.join(":");
+  switch (kind) {
+    case "tag-match":
+      return `совпало ${value} тегов`;
+    case "category":
+      return `категория · ${value}`;
+    case "theme":
+      return `тема · ${value}`;
+  }
+  return r;
+}
 
 interface ActionSheetProps {
   suggestion: Suggestion | null;
@@ -85,19 +103,31 @@ export function ActionSheet({ suggestion, farmerId, onClose }: ActionSheetProps)
     }
   }
 
-  async function onGenerate() {
+  async function onGenerate(variant = 0) {
     setGenerating(true);
     try {
       const id = await ensurePersisted();
-      const out = await generateContent(id);
-      setContent(out);
-      toast.success("Кампания сгенерирована", `${out.length} канал(а) готовы.`);
+      const out = await generateContent(id, undefined, variant);
+      // Merge: keep existing variants, replace those that match (channel, variant).
+      setContent((prev) => {
+        const key = (g: GeneratedContent) => `${g.channel}:${g.variant}`;
+        const map = new Map(prev.map((g) => [key(g), g]));
+        for (const g of out) map.set(key(g), g);
+        return Array.from(map.values());
+      });
+      const label = variant === 0 ? "Вариант A" : `Вариант ${String.fromCharCode(65 + variant)}`;
+      toast.success(`${label} сгенерирован`, `${out.length} канал(а) готовы.`);
     } catch (e: any) {
       toast.error("Не удалось сгенерировать", e?.response?.data?.error ?? e?.message);
     } finally {
       setGenerating(false);
     }
   }
+
+  // Highest variant already present, or -1 if none.
+  const maxVariant = content.length
+    ? Math.max(...content.map((c) => c.variant))
+    : -1;
 
   async function onAddToPlan() {
     try {
@@ -140,6 +170,13 @@ export function ActionSheet({ suggestion, farmerId, onClose }: ActionSheetProps)
 
       <SheetBody>
         <div className="space-y-6">
+          {/* Why this event matters */}
+          {ev && (
+            <section>
+              <EventExplain event={ev} />
+            </section>
+          )}
+
           {/* Matched SKUs */}
           <section>
             <h4 className="mb-2 text-xs uppercase tracking-widest text-ink-mute">
@@ -149,17 +186,35 @@ export function ActionSheet({ suggestion, farmerId, onClose }: ActionSheetProps)
               <p className="text-sm text-ink-mute">Нет товаров под это событие.</p>
             ) : (
               <div className="grid gap-2 md:grid-cols-2">
-                {(local.products ?? []).map((p) => (
-                  <div key={p.id} className="glass flex items-center gap-3 rounded-lg p-3">
-                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-line bg-bg-elevated text-xs uppercase text-ink-mute">
-                      {p.category.slice(0, 2)}
+                {(local.products ?? []).map((p) => {
+                  const reasons = local.product_reasons?.[p.id] ?? [];
+                  return (
+                    <div key={p.id} className="glass flex flex-col gap-2 rounded-lg p-3">
+                      <div className="flex items-center gap-3">
+                        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-md border border-line bg-bg-elevated text-xs uppercase text-ink-mute">
+                          {p.category.slice(0, 2)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium">{p.name}</div>
+                          <div className="text-[11px] text-ink-mute">{p.category}</div>
+                        </div>
+                      </div>
+                      {reasons.length > 0 && (
+                        <div className="flex flex-wrap gap-1 pl-[3.25rem]">
+                          {reasons.map((r) => (
+                            <span
+                              key={r}
+                              title={r}
+                              className="rounded-md border border-leaf/30 bg-leaf-soft/30 px-1.5 py-0.5 text-[10px] text-leaf"
+                            >
+                              {reasonLabel(r)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-medium">{p.name}</div>
-                      <div className="text-[11px] text-ink-mute">{p.category}</div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </section>
@@ -176,19 +231,33 @@ export function ActionSheet({ suggestion, farmerId, onClose }: ActionSheetProps)
 
           {/* Generated content tabs */}
           <section>
-            <div className="mb-2 flex items-center justify-between">
-              <h4 className="text-xs uppercase tracking-widest text-ink-mute">Контент по каналам</h4>
-              <Button size="sm" onClick={onGenerate} disabled={generating || persisting}>
-                {generating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" /> Генерируем…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4" /> Сгенерировать кампанию
-                  </>
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <h4 className="smallcaps text-[10px] text-ink-mute">Контент по каналам</h4>
+              <div className="flex items-center gap-2">
+                {maxVariant >= 0 && maxVariant < 2 && (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    onClick={() => onGenerate(maxVariant + 1)}
+                    disabled={generating || persisting}
+                  >
+                    <Sparkles className="h-4 w-4" />
+                    Вариант {String.fromCharCode(66 + maxVariant)}
+                  </Button>
                 )}
-              </Button>
+                <Button size="sm" onClick={() => onGenerate(maxVariant < 0 ? 0 : 0)} disabled={generating || persisting}>
+                  {generating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" /> Генерируем…
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      {maxVariant >= 0 ? "Перегенерировать A" : "Сгенерировать кампанию"}
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
             <ContentTabs content={content} loading={generating} />
           </section>

@@ -42,8 +42,17 @@ export const getSuggestion = (id: string) =>
 export const persistSuggestion = (farmer_id: string, suggestion: Suggestion) =>
   api.post<Suggestion>("/api/suggestions", { farmer_id, suggestion }).then((r) => r.data);
 
-export const generateContent = (id: string, channels?: string[]) =>
-  api.post<{ content: GeneratedContent[] }>(`/api/suggestions/${id}/generate`, { channels }).then((r) => r.data.content);
+export const generateContent = (
+  id: string,
+  channels?: string[],
+  variant: number = 0,
+) =>
+  api
+    .post<{ content: GeneratedContent[] }>(`/api/suggestions/${id}/generate`, {
+      channels,
+      variant,
+    })
+    .then((r) => r.data.content);
 
 export const listContent = (id: string) =>
   api.get<{ content: GeneratedContent[] }>(`/api/suggestions/${id}/content`).then((r) => r.data.content);
@@ -57,3 +66,43 @@ export const addPlanCard = (payload: { farmer_id: string; suggestion: Suggestion
 
 export const movePlanCard = (payload: { card_id: string; farmer_id: string; suggestion_id: string; column: string; position: number }) =>
   api.post<{ ok: boolean }>("/api/plan/cards/move", payload).then((r) => r.data);
+
+// ------ chat -------------------------------------------------------------
+
+export interface ChatMessage {
+  role: "user" | "assistant" | "model";
+  text: string;
+}
+export interface ChatAction {
+  label: string;
+  href: string;
+}
+export interface ChatReply {
+  text: string;
+  actions: ChatAction[];
+  used: string[];
+  evidence: Record<string, any>;
+}
+
+export const chatTurn = (
+  farmerId: string,
+  message: string,
+  history: ChatMessage[] = [],
+) =>
+  api
+    .post<ChatReply>(`/api/farmers/${farmerId}/chat`, { message, history })
+    .then((r) => r.data);
+
+// ------ insights ---------------------------------------------------------
+
+export interface Insight {
+  kind: string;
+  title: string;
+  body: string;
+  tone: "leaf" | "amber" | "plum" | "sky" | "rust";
+  score: number;
+  evidence: Record<string, any>;
+}
+
+export const getInsights = (farmerId: string) =>
+  api.get<{ insights: Insight[] }>(`/api/farmers/${farmerId}/insights`).then((r) => r.data.insights);

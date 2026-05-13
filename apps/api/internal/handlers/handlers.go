@@ -10,6 +10,8 @@ import (
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/db"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/models"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/ai"
+	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/chat"
+	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/insights"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/plan"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/recommendation"
 )
@@ -20,6 +22,8 @@ type Deps struct {
 	Reco        *recommendation.Engine
 	Content     *ai.ContentService
 	Plan        *plan.Service
+	Insights    *insights.Engine
+	ChatSvc     *chat.Service
 	GeminiModel string // used as audit label on persisted GeneratedContent rows
 }
 
@@ -33,6 +37,8 @@ func Register(r *gin.Engine, d *Deps) {
 		api.GET("/farmers/:id/products", d.GetFarmerProducts)
 		api.GET("/farmers/:id/calendar", d.GetCalendar)
 		api.GET("/farmers/:id/plan", d.GetPlan)
+		api.GET("/farmers/:id/insights", d.GetInsights)
+		api.POST("/farmers/:id/chat", d.Chat)
 
 		api.GET("/events", d.ListEvents)
 		api.POST("/suggestions", d.CreateSuggestion)
@@ -150,6 +156,7 @@ func (d *Deps) CreateSuggestion(c *gin.Context) {
 
 type generateReq struct {
 	Channels []string `json:"channels"`
+	Variant  int      `json:"variant"`
 }
 
 // GenerateContent fans out per-channel Gemini calls and persists results.
@@ -189,7 +196,7 @@ func (d *Deps) GenerateContent(c *gin.Context) {
 		products, _ = d.Repo.ListProductsByFarmer(sug.FarmerID)
 	}
 
-	out, err := d.Content.GenerateAll(ctx, *farmer, *ev, products, chs)
+	out, err := d.Content.GenerateAll(ctx, *farmer, *ev, products, chs, req.Variant)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
@@ -198,7 +205,7 @@ func (d *Deps) GenerateContent(c *gin.Context) {
 	persisted := make([]models.GeneratedContent, 0, len(out))
 	for ch, body := range out {
 		gc := &models.GeneratedContent{
-			SuggestionID: sug.ID, Channel: ch, Variant: 0,
+			SuggestionID: sug.ID, Channel: ch, Variant: req.Variant,
 			Body: body, Model: d.modelLabel(), PromptVersion: ai.PromptVersion,
 		}
 		if err := d.Repo.UpsertGenerated(gc); err == nil {
@@ -227,6 +234,42 @@ func (d *Deps) GetPlan(c *gin.Context) {
 		return
 	}
 	c.JSON(200, board)
+}
+
+// Chat handles one turn of the grounded Q&A chat. The request body carries
+// the message + optional prior transcript; the response is the assistant
+// reply, deep-link action chips, and a list of tools that were invoked.
+type chatReq struct {
+	Message string         `json:"message" binding:"required"`
+	History []chat.Message `json:"history"`
+}
+
+func (d *Deps) Chat(c *gin.Context) {
+	var req chatReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+		return
+	}
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
+	defer cancel()
+
+	reply, err := d.ChatSvc.Answer(ctx, c.Param("id"), req.History, req.Message)
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, reply)
+}
+
+// GetInsights returns 4-8 proactive intelligence cards for the farmer.
+// All rules are deterministic; the response is stable for the same catalog.
+func (d *Deps) GetInsights(c *gin.Context) {
+	list, err := d.Insights.For(c.Param("id"))
+	if err != nil {
+		c.JSON(500, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, gin.H{"insights": list})
 }
 
 type addCardReq struct {

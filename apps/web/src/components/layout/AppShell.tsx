@@ -15,6 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { getFarmer } from "@/lib/api";
+import { ChatLauncher, ChatSheet } from "@/components/chat/ChatSheet";
 
 const items = [
   { to: "dashboard", label: "Дашборд", Icon: LayoutDashboard },
@@ -28,6 +29,7 @@ const items = [
 export function AppShell() {
   const { farmerId = "10060" } = useParams();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
   const location = useLocation();
 
   // Close drawer on every route change.
@@ -107,6 +109,10 @@ export function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      {/* Floating AI chat launcher + drawer */}
+      <ChatLauncher onClick={() => setChatOpen(true)} />
+      <ChatSheet open={chatOpen} onOpenChange={setChatOpen} />
     </div>
   );
 }

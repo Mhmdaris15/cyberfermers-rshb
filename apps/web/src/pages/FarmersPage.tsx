@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { ArrowUpRight, MapPin, Search, Sprout, Store } from "lucide-react";
+import { ArrowUpRight, Brain, Calendar, MapPin, Search, Sprout, Store } from "lucide-react";
 
 import { listFarmers } from "@/lib/api";
 import type { Farmer } from "@/lib/types";
@@ -193,10 +193,15 @@ function FarmerCard({ f, index }: { f: Farmer; index: number }) {
               <ArrowUpRight className="h-4 w-4 text-ink-mute transition group-hover:text-leaf" />
             </header>
 
-            <p className="line-clamp-3 min-h-[3rem] text-sm leading-relaxed text-ink-dim">
+            <p className="line-clamp-2 min-h-[2.4rem] text-sm leading-relaxed text-ink-dim">
               {desc}
               {showDots && "…"}
             </p>
+
+            <ScoreRow
+              ai={f.ai_readiness_score ?? 0}
+              opp={f.seasonal_opportunity_score ?? 0}
+            />
 
             <div className="mt-auto flex items-end justify-between gap-3 pt-2">
               <div className="flex flex-wrap gap-1">
@@ -223,6 +228,61 @@ function FarmerCard({ f, index }: { f: Farmer; index: number }) {
         </Card>
       </Link>
     </motion.div>
+  );
+}
+
+// Two compact gauges shown on each farmer card.
+function ScoreRow({ ai, opp }: { ai: number; opp: number }) {
+  return (
+    <div className="flex items-center gap-3 rounded-lg border border-line/70 bg-bg-subtle/40 px-3 py-2">
+      <Gauge
+        label="AI готовность"
+        value={ai}
+        tone="leaf"
+        icon={<Brain className="h-3 w-3" />}
+        hint="% SKU с тегами"
+      />
+      <div className="h-6 w-px bg-line/70" aria-hidden />
+      <Gauge
+        label="Сезонный потенциал"
+        value={opp}
+        tone="amber"
+        icon={<Calendar className="h-3 w-3" />}
+        hint="событий в 60 дней"
+      />
+    </div>
+  );
+}
+
+function Gauge({
+  label,
+  value,
+  tone,
+  icon,
+  hint,
+}: {
+  label: string;
+  value: number;
+  tone: "leaf" | "amber";
+  icon: React.ReactNode;
+  hint: string;
+}) {
+  const pct = Math.max(0, Math.min(100, Math.round(value)));
+  const cls = tone === "leaf" ? "text-leaf" : "text-amber";
+  const bar = tone === "leaf" ? "bg-leaf" : "bg-amber";
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className="flex items-center gap-1 smallcaps text-[9px] text-ink-mute">
+        <span className={cls}>{icon}</span>
+        <span className="truncate" title={hint}>{label}</span>
+      </div>
+      <div className="flex items-baseline gap-2">
+        <span className={`font-mono tnum text-sm font-medium leading-none ${cls}`}>{pct}</span>
+        <div className="relative h-1 flex-1 overflow-hidden rounded-full bg-bg-elevated">
+          <div className={`absolute inset-y-0 left-0 rounded-full ${bar}`} style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+    </div>
   );
 }
 

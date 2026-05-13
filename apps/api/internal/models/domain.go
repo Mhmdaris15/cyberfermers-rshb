@@ -17,6 +17,11 @@ type Farmer struct {
 	CreatedAt      time.Time `json:"created_at"`
 	ProductCount   int       `json:"product_count,omitempty"`
 	Categories     []string  `json:"categories,omitempty"`
+	// AIReadinessScore 0-100 — % of SKUs with ≥3 distinct tags.
+	AIReadinessScore int `json:"ai_readiness_score,omitempty"`
+	// SeasonalOpportunityScore 0-100 — events in next 60 days that overlap
+	// with the farmer's categories (capped at 20 events = 100%).
+	SeasonalOpportunityScore int `json:"seasonal_opportunity_score,omitempty"`
 }
 
 type Product struct {
@@ -89,24 +94,31 @@ type PredictedLift struct {
 	RevenueDelta float64      `json:"revenue_delta"`
 	Confidence   float64      `json:"confidence"`
 	Assumptions  []Assumption `json:"assumptions"`
+	// ChannelMix[channel] = absolute Δorders attributable to that channel.
+	// Summed across channels equals OrdersDelta. Powers the per-channel
+	// breakdown bar in the FE RoiPanel.
+	ChannelMix map[string]float64 `json:"channel_mix,omitempty"`
 }
 
 type Suggestion struct {
-	ID              string        `json:"id"`
-	FarmerID        string        `json:"farmer_id"`
-	EventID         string        `json:"event_id"`
-	Event           *Event        `json:"event,omitempty"`
-	Products        []Product     `json:"products,omitempty"`
-	ProductIDs      []string      `json:"product_ids"`
-	Channels        []string      `json:"channels"`
-	DateWindowStart time.Time     `json:"date_window_start"`
-	DateWindowEnd   time.Time     `json:"date_window_end"`
-	Promo           Promo         `json:"promo"`
-	PredictedLift   PredictedLift `json:"predicted_lift"`
-	Score           float64       `json:"score"`
-	Status          string        `json:"status"`
-	CreatedAt       time.Time     `json:"created_at"`
-	UpdatedAt       time.Time     `json:"updated_at"`
+	ID              string              `json:"id"`
+	FarmerID        string              `json:"farmer_id"`
+	EventID         string              `json:"event_id"`
+	Event           *Event              `json:"event,omitempty"`
+	Products        []Product           `json:"products,omitempty"`
+	ProductIDs      []string            `json:"product_ids"`
+	Channels        []string            `json:"channels"`
+	DateWindowStart time.Time           `json:"date_window_start"`
+	DateWindowEnd   time.Time           `json:"date_window_end"`
+	Promo           Promo               `json:"promo"`
+	PredictedLift   PredictedLift       `json:"predicted_lift"`
+	Score           float64             `json:"score"`
+	Status          string              `json:"status"`
+	CreatedAt       time.Time           `json:"created_at"`
+	UpdatedAt       time.Time           `json:"updated_at"`
+	// ProductReasons[product_id] = ["tag-match:3","category:Сыры",…] — emitted
+	// by the matcher and shown under each SKU as small chips on the FE.
+	ProductReasons map[string][]string `json:"product_reasons,omitempty"`
 }
 
 // ---- generated content --------------------------------------------
@@ -166,6 +178,18 @@ type GeneratedContent struct {
 }
 
 // ---- plan board ----------------------------------------------------
+
+// Insight is a proactive recommendation emitted by the insights engine.
+// It is rendered as a card on the "AI Insights" page. Each rule produces
+// 0..1 of these per run; the engine ranks them by `score` and trims to top N.
+type Insight struct {
+	Kind     string         `json:"kind"`     // gift_gap | season_opening | premium_gap | category_strength | channel_gap | match_gap
+	Title    string         `json:"title"`    // headline; ≤72 chars
+	Body     string         `json:"body"`     // expanded paragraph; 1-3 sentences
+	Tone     string         `json:"tone"`     // leaf | amber | plum | sky | rust
+	Score    float64        `json:"score"`    // 0..1, higher = more urgent / impactful
+	Evidence map[string]any `json:"evidence"` // raw counters for the FE / debugging
+}
 
 type PlanCard struct {
 	ID            string     `json:"id"`

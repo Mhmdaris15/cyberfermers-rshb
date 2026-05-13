@@ -199,7 +199,86 @@ func (r *Repo) ListFarmersWithCounts(limit int) ([]models.Farmer, error) {
 		sort.Strings(cats)
 		farmers[i].Categories = cats
 	}
+
+	r.attachScores(farmers)
 	return farmers, nil
+}
+
+// attachScores fills AIReadinessScore + SeasonalOpportunityScore on every
+// farmer. Two cheap aggregate queries + one in-memory join — much faster than
+// computing per-farmer in a loop.
+func (r *Repo) attachScores(farmers []models.Farmer) {
+	// --- Readiness: tags-per-product → % of farmer SKUs with ≥3 tags ---
+	res, err := r.c.Query("SELECT product, count() AS n FROM product_tag GROUP BY product;", nil)
+	if err != nil {
+		return
+	}
+	var tagRows []struct {
+		Product string `json:"product"`
+		N       int    `json:"n"`
+	}
+	_ = decodeQueryRows(res, &tagRows)
+	tagsPerProduct := make(map[string]int, len(tagRows))
+	for _, row := range tagRows {
+		pid := strings.TrimPrefix(row.Product, "product:")
+		tagsPerProduct[pid] = row.N
+	}
+
+	res, err = r.c.Query("SELECT meta::id(id) AS pid, meta::id(farmer) AS fid FROM product;", nil)
+	if err != nil {
+		return
+	}
+	var pf []struct {
+		Pid string `json:"pid"`
+		Fid string `json:"fid"`
+	}
+	_ = decodeQueryRows(res, &pf)
+	type agg struct{ total, tagged int }
+	byFarmer := make(map[string]*agg, len(farmers))
+	for _, x := range pf {
+		a := byFarmer[x.Fid]
+		if a == nil {
+			a = &agg{}
+			byFarmer[x.Fid] = a
+		}
+		a.total++
+		// Readiness reads "has the AI got *anything* to work with for this
+		// SKU?". Even one accurate tag dramatically improves matcher quality;
+		// holding out for ≥3 punishes the catalog state too harshly.
+		if tagsPerProduct[x.Pid] >= 1 {
+			a.tagged++
+		}
+	}
+
+	// --- Opportunity: count of upcoming events overlapping farmer categories ---
+	now := time.Now()
+	events, _ := r.ListEventsBetween(now, now.AddDate(0, 0, 60))
+
+	for i := range farmers {
+		// readiness
+		if a := byFarmer[farmers[i].ID]; a != nil && a.total > 0 {
+			farmers[i].AIReadinessScore = int(100.0 * float64(a.tagged) / float64(a.total))
+		}
+		// opportunity: events whose categories overlap farmer's categories
+		catSet := map[string]bool{}
+		for _, c := range farmers[i].Categories {
+			catSet[c] = true
+		}
+		matched := 0
+		for _, ev := range events {
+			for _, c := range ev.Categories {
+				if catSet[c] {
+					matched++
+					break
+				}
+			}
+		}
+		score := matched * 5 // 20 events = 100
+		if score > 100 {
+			score = 100
+		}
+		farmers[i].SeasonalOpportunityScore = score
+	}
 }
 
 func (r *Repo) GetFarmer(id string) (*models.Farmer, error) {
@@ -391,11 +470,19 @@ func (r *Repo) CreateSuggestion(s *models.Suggestion) (string, error) {
 	for _, p := range src {
 		products = append(products, ensureRecordID(p, "product"))
 	}
+	// Coerce []string maps to []any so marshalSurreal handles them generically.
+	reasons := map[string]any{}
+	for k, v := range s.ProductReasons {
+		// Surreal key must not contain ':' literally; record-id-shaped keys get
+		// stored as strings since this is a FLEXIBLE field, not a record link.
+		reasons[k] = v
+	}
 	res, err := r.c.Query(`
 	  LET $created = (CREATE suggestion SET
 	    farmer = $farmer, event = $event, products = $products,
 	    channels = $channels, date_window_start = $start, date_window_end = $end,
-	    promo = $promo, predicted_lift = $lift, score = $score, status = $status
+	    promo = $promo, predicted_lift = $lift, score = $score, status = $status,
+	    product_reasons = $reasons
 	  );
 	  RETURN meta::id($created[0].id);
 	`,
@@ -403,6 +490,7 @@ func (r *Repo) CreateSuggestion(s *models.Suggestion) (string, error) {
 			"farmer": farmer, "event": event, "products": products,
 			"channels": s.Channels, "start": s.DateWindowStart, "end": s.DateWindowEnd,
 			"promo": s.Promo, "lift": s.PredictedLift, "score": s.Score, "status": s.Status,
+			"reasons": reasons,
 		})
 	if err != nil {
 		return "", err
@@ -426,7 +514,7 @@ func (r *Repo) ListSuggestionsForFarmer(farmerID string, from, to time.Time) ([]
 	    meta::id(farmer) AS farmer_id,
 	    meta::id(event) AS event_id,
 	    channels, date_window_start, date_window_end,
-	    promo, predicted_lift, score, status,
+	    promo, predicted_lift, product_reasons, score, status,
 	    event, products,
 	    created_at, updated_at
 	  FROM suggestion
@@ -454,7 +542,7 @@ func (r *Repo) GetSuggestion(id string) (*models.Suggestion, error) {
 	    meta::id(farmer) AS farmer_id,
 	    meta::id(event) AS event_id,
 	    channels, date_window_start, date_window_end,
-	    promo, predicted_lift, score, status,
+	    promo, predicted_lift, product_reasons, score, status,
 	    event, products,
 	    created_at, updated_at
 	  FROM $s FETCH event, products;`,
@@ -598,7 +686,7 @@ func (r *Repo) GetSuggestionsByIDs(ids []string) (map[string]*models.Suggestion,
 	    meta::id(farmer) AS farmer_id,
 	    meta::id(event) AS event_id,
 	    channels, date_window_start, date_window_end,
-	    promo, predicted_lift, score, status,
+	    promo, predicted_lift, product_reasons, score, status,
 	    event, products,
 	    created_at, updated_at
 	  FROM suggestion WHERE id INSIDE $ids FETCH event, products;`,

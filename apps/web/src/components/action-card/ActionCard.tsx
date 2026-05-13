@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import { ArrowUpRight, Sparkles, TrendingUp } from "lucide-react";
+import { ArrowUpRight, Brain, Flame, Sparkles, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn, formatInt, formatRUB } from "@/lib/utils";
+import { cn, formatInt, formatRUB, plural } from "@/lib/utils";
 import { eventTypeMeta } from "@/lib/events";
 import type { Suggestion } from "@/lib/types";
 
@@ -18,6 +18,16 @@ export function ActionCard({ s, onOpen, onAdd, index = 0 }: ActionCardProps) {
   const ev = s.event;
   const meta = ev ? eventTypeMeta[ev.type] : null;
   const top = (s.products ?? []).slice(0, 4);
+
+  // Urgency: days until event start (not the prep-window start). Pulsing dot
+  // at ≤7 days; "сегодня" / "завтра" use friendlier copy.
+  const eventStart = new Date(ev?.start_date ?? s.date_window_start);
+  const daysUntil = Math.max(
+    0,
+    Math.round((eventStart.getTime() - Date.now()) / 86_400_000),
+  );
+  const urgent = daysUntil <= 7;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -32,15 +42,19 @@ export function ActionCard({ s, onOpen, onAdd, index = 0 }: ActionCardProps) {
           style={{ background: ev?.color ?? `hsl(var(--${meta?.color ?? "leaf"}))` }}
         />
         <CardHeader className="gap-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <Badge variant={(meta?.color as any) ?? "leaf"}>{meta?.label}</Badge>
-            <span className="text-[11px] text-ink-mute">
+            <UrgencyBadge daysUntil={daysUntil} urgent={urgent} />
+          </div>
+          <h3 className="font-display text-xl font-semibold leading-tight">{ev?.title}</h3>
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-ink-mute">
+            <span>
               {new Date(s.date_window_start).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}
               {" — "}
               {new Date(s.date_window_end).toLocaleDateString("ru-RU", { day: "2-digit", month: "short" })}
             </span>
+            <ConfidenceBadge value={s.predicted_lift.confidence} />
           </div>
-          <h3 className="font-display text-xl font-semibold leading-tight">{ev?.title}</h3>
           {ev?.themes?.[0] && (
             <p className="text-sm text-ink-dim line-clamp-2">{ev.themes[0]}</p>
           )}
@@ -109,6 +123,60 @@ function Metric({ label, value, hint, tone, icon }: { label: string; value: stri
       </div>
       {hint && <div className="text-[11px] text-ink-mute">{hint}</div>}
     </div>
+  );
+}
+
+// ConfidenceBadge — surfaces PredictedLift.Confidence as a tiered chip.
+// 0.0-0.45 low, 0.45-0.70 medium, 0.70+ high. The deck/judge sees this first
+// and it tells them the recommender knows when to be humble.
+function ConfidenceBadge({ value }: { value: number }) {
+  const pct = Math.max(0, Math.min(100, Math.round(value * 100)));
+  let tier: "low" | "med" | "high" = "low";
+  if (value >= 0.70) tier = "high";
+  else if (value >= 0.45) tier = "med";
+
+  const cls = cn(
+    "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px]",
+    tier === "high" && "border-leaf/40 bg-leaf-soft/30 text-leaf",
+    tier === "med" && "border-amber/40 bg-amber-soft/30 text-amber",
+    tier === "low" && "border-line bg-bg-elevated/60 text-ink-dim",
+  );
+  return (
+    <span className={cls} title="Уверенность AI в прогнозе">
+      <Brain className="h-3 w-3" aria-hidden />
+      <span className="tnum">{pct}%</span>
+    </span>
+  );
+}
+
+// UrgencyBadge — copy + color tier driven by days-until-event.
+function UrgencyBadge({ daysUntil, urgent }: { daysUntil: number; urgent: boolean }) {
+  let copy: string;
+  if (daysUntil === 0) copy = "сегодня";
+  else if (daysUntil === 1) copy = "завтра";
+  else copy = `до события ${daysUntil} ${plural(daysUntil, ["день", "дня", "дней"])}`;
+
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px]",
+        urgent
+          ? "border-amber/40 bg-amber-soft/30 text-amber"
+          : "border-line bg-bg-elevated/60 text-ink-dim",
+      )}
+    >
+      {urgent && (
+        <motion.span
+          aria-hidden
+          className="grid place-items-center"
+          animate={{ scale: [1, 1.15, 1] }}
+          transition={{ duration: 1.8, repeat: Infinity }}
+        >
+          <Flame className="h-3 w-3" />
+        </motion.span>
+      )}
+      <span className="tnum">{copy}</span>
+    </span>
   );
 }
 
