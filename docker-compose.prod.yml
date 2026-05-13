@@ -56,6 +56,10 @@ services:
     restart: unless-stopped
     env_file: .env.production
     environment:
+      # Pinned here (not from env_file) so Coolify/platform env injection
+      # cannot override the listen port the healthcheck targets.
+      # `environment:` has higher precedence than `env_file:` in compose.
+      API_PORT: "8080"
       # Override the host-side defaults so the API talks to the DB by service name.
       SURREAL_URL: http://surrealdb:8000
       API_CORS_ORIGINS: ${API_CORS_ORIGINS:-https://localhost}
@@ -80,8 +84,9 @@ services:
         - --spider
         - http://localhost:8080/health
       interval: 10s
+      timeout: 3s
       retries: 5
-      start_period: 10s
+      start_period: 30s
     logging:
       driver: json-file
       options:
