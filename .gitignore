@@ -29,13 +29,6 @@ __pycache__/
 .DS_Store
 Thumbs.db
 
-# surreal
-data/surreal/
-
-# raw drops we don't commit
-data/raw/*.xlsx
-!data/raw/.gitkeep
-
 # build artifacts
 build/
 out/
