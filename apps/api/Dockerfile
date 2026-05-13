@@ -69,6 +69,6 @@ RUN mkdir -p /app/data/raw && chown -R svoe:svoe /app
 USER svoe
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=5 \
-  CMD wget --quiet --spider http://localhost:8080/health || exit 1
+  CMD sh -c "wget --quiet --spider http://localhost:${API_PORT:-8081}/health || exit 1"
 
 ENTRYPOINT ["/app/bin/server"]

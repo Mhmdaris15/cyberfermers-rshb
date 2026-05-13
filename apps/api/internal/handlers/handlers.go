@@ -28,7 +28,7 @@ type Deps struct {
 }
 
 func Register(r *gin.Engine, d *Deps) {
-	r.GET("/health", func(c *gin.Context) { c.JSON(200, gin.H{"ok": true}) })
+	r.GET("/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
 
 	api := r.Group("/api")
 	{
