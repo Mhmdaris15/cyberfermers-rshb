@@ -15,7 +15,11 @@
 # ---- builder ---------------------------------------------------------
 FROM node:20-alpine AS build
 WORKDIR /app
-ENV NPM_CONFIG_AUDIT=false \
+
+# Force development mode so devDependencies (vite, typescript, tailwind,
+# postcss) are installed even when the host or CI injects NODE_ENV=production.
+ENV NODE_ENV=development \
+    NPM_CONFIG_AUDIT=false \
     NPM_CONFIG_FUND=false \
     NPM_CONFIG_PROGRESS=false \
     NPM_CONFIG_LOGLEVEL=error \
