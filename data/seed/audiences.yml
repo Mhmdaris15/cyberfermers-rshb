@@ -1,0 +1,46 @@
+# =====================================================================
+#  Canonical buyer personas on svoe-rodnoe.ru.
+#  Wired into the graph as `audience` nodes; products -[targets]-> audience.
+# =====================================================================
+
+- slug: healthy
+  label: "ЗОЖ-аудитория"
+  description: "Покупатели, ищущие функциональную пользу продуктов и натуральные способы закрытия дефицитов организма."
+  income_band: "middle+"
+  interests: [organic, no_sugar, herbal, fitness, clean_label]
+  avg_basket_rub: 1850
+
+- slug: parents
+  label: "Осознанные родители"
+  description: "Семьи с детьми, ищут безопасность, чистоту состава, отсутствие химии."
+  income_band: "middle+"
+  interests: [kids_friendly, no_additives, organic, family]
+  avg_basket_rub: 2100
+
+- slug: gourmets
+  label: "Гурманы и кулинары"
+  description: "Ищут натуральный редкий продукт с понятным происхождением и отличными вкусовыми качествами."
+  income_band: "high"
+  interests: [premium, aged, rare, regional_specialty, authorial]
+  avg_basket_rub: 3400
+
+- slug: gift_buyers
+  label: "Покупатели подарков"
+  description: "Хотят оригинальность и готовое решение для подарка."
+  income_band: "middle+"
+  interests: [gift_basket, hand_packed, ribbon, seasonal_collection]
+  avg_basket_rub: 2900
+
+- slug: fitness
+  label: "Фитнес-энтузиасты"
+  description: "Качественный белок, предсказуемый состав и полезные калории."
+  income_band: "middle+"
+  interests: [high_protein, low_sugar, meat_lean, eggs, dairy_high_protein]
+  avg_basket_rub: 2200
+
+- slug: students
+  label: "Студенты и молодёжь"
+  description: "Бюджетные снеки, перекусы, готовые завтраки."
+  income_band: "low-middle"
+  interests: [snack, ready_meal, energy_bar, dried_fruits]
+  avg_basket_rub: 950

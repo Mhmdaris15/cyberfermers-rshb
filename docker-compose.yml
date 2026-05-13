@@ -1,3 +1,9 @@
+# =====================================================================
+#  Local DEV — SurrealDB only.
+#  API + Web run natively on the host (see dev.ps1 / Makefile).
+#  For full-stack containerised deploys, use docker-compose.prod.yml.
+# =====================================================================
+
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2.1.4

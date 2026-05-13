@@ -39,6 +39,7 @@ func Register(r *gin.Engine, d *Deps) {
 		api.GET("/farmers/:id/plan", d.GetPlan)
 		api.GET("/farmers/:id/insights", d.GetInsights)
 		api.POST("/farmers/:id/chat", d.Chat)
+		api.GET("/farmers/:id/stream", d.Stream)
 
 		api.GET("/events", d.ListEvents)
 		api.POST("/suggestions", d.CreateSuggestion)
@@ -196,13 +197,39 @@ func (d *Deps) GenerateContent(c *gin.Context) {
 		products, _ = d.Repo.ListProductsByFarmer(sug.FarmerID)
 	}
 
-	out, err := d.Content.GenerateAll(ctx, *farmer, *ev, products, chs, req.Variant)
+	// ── Cache pass: skip channels we already have a fresh generation for. ──
+	// Re-opening an action sheet costs zero Gemini tokens if every channel
+	// already has a content row at the requested variant and prompt version.
+	existing, _ := d.Repo.ListGeneratedForSuggestion(sug.ID)
+	have := make(map[string]models.GeneratedContent, len(existing))
+	for _, gc := range existing {
+		if gc.Variant != req.Variant {
+			continue
+		}
+		if gc.PromptVersion != "" && gc.PromptVersion != ai.PromptVersion {
+			continue
+		}
+		have[string(gc.Channel)] = gc
+	}
+	toGenerate := make([]models.Channel, 0, len(chs))
+	persisted := make([]models.GeneratedContent, 0, len(chs))
+	for _, ch := range chs {
+		if cached, ok := have[string(ch)]; ok {
+			persisted = append(persisted, cached)
+		} else {
+			toGenerate = append(toGenerate, ch)
+		}
+	}
+	if len(toGenerate) == 0 {
+		c.JSON(200, gin.H{"content": persisted, "cache_hits": len(persisted), "api_calls": 0})
+		return
+	}
+
+	out, err := d.Content.GenerateAll(ctx, *farmer, *ev, products, toGenerate, req.Variant)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-
-	persisted := make([]models.GeneratedContent, 0, len(out))
 	for ch, body := range out {
 		gc := &models.GeneratedContent{
 			SuggestionID: sug.ID, Channel: ch, Variant: req.Variant,

@@ -28,6 +28,10 @@ type Config struct {
 	SchemaPath     string
 	EventsYAMLPath string
 	XLSXPath       string
+	// Knowledge-graph seeds (audiences / trends / seasonal windows).
+	AudiencesYAMLPath       string
+	TrendsYAMLPath          string
+	SeasonalWindowsYAMLPath string
 }
 
 // Load reads env from the closest .env walking upward from cwd. This keeps the
@@ -49,7 +53,7 @@ func Load() *Config {
 		SurrealDB:      envOr("SURREAL_DB", "svoe_rodnoe"),
 		GeminiKey:      os.Getenv("GEMINI_API_KEY"),
 		GeminiModel:    envOr("GEMINI_MODEL", "gemini-2.5-flash"),
-		GeminiEmbed:    envOr("GEMINI_EMBED_MODEL", "text-embedding-004"),
+		GeminiEmbed:    envOr("GEMINI_EMBED_MODEL", "gemini-embedding-001"),
 		TaggingBatch:   envInt("TAGGING_BATCH_SIZE", 20),
 		TaggingRPM:     envInt("TAGGING_RATE_LIMIT_PER_MIN", 15),
 		TaggingDryRun:  envBool("TAGGING_DRY_RUN", false),
@@ -57,6 +61,10 @@ func Load() *Config {
 		SchemaPath:     envOr("SCHEMA_PATH", filepath.Join(root, "infrastructure", "surrealdb", "schema.surql")),
 		EventsYAMLPath: envOr("EVENTS_YAML_PATH", filepath.Join(root, "data", "seed", "events.yml")),
 		XLSXPath:       envOr("XLSX_PATH", filepath.Join(root, "data", "raw", "farmers_sku.xlsx")),
+
+		AudiencesYAMLPath:       envOr("AUDIENCES_YAML_PATH", filepath.Join(root, "data", "seed", "audiences.yml")),
+		TrendsYAMLPath:          envOr("TRENDS_YAML_PATH", filepath.Join(root, "data", "seed", "trends.yml")),
+		SeasonalWindowsYAMLPath: envOr("SEASONAL_WINDOWS_YAML_PATH", filepath.Join(root, "data", "seed", "seasonal_windows.yml")),
 	}
 	return c
 }

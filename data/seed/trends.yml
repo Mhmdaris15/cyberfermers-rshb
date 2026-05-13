@@ -1,0 +1,71 @@
+# =====================================================================
+#  Editorial / market-curated trends. Each carries a `strength` 0..1
+#  and an optional list of events it should influence by slug.
+#
+#  Wired into the graph as `trend` nodes; trend -[influences]-> event.
+# =====================================================================
+
+- slug: clean-label-2026
+  title: "Чистый состав без добавок"
+  description: "Покупатели всё чаще выбирают продукты с короткими составами — без E-добавок и консервантов. Поддерживает категорию органики и ферментации."
+  source: editorial
+  strength: 0.82
+  started_at: 2026-01-01
+  horizon_days: 365
+  audience_tags: [healthy, parents]
+  product_tags: [organic, no_additives, fermented, sourdough]
+  influences:
+    - { event: ferment-week,           strength: 0.9 }
+    - { event: healthy-breakfast-week, strength: 0.7 }
+    - { event: vegan-week,             strength: 0.6 }
+
+- slug: high-protein-2026
+  title: "Высокобелковая повестка"
+  description: "Аудитория ЗОЖ и фитнеса стабильно растёт; high-protein сыр, греческий йогурт, постное мясо — лидеры роста."
+  source: marketplace
+  strength: 0.74
+  started_at: 2026-03-01
+  horizon_days: 180
+  audience_tags: [fitness, healthy]
+  product_tags: [cheese_aged, cottage_cheese, yogurt_live, eggs, meat]
+  influences:
+    - { event: bbq-week,               strength: 0.8 }
+    - { event: cheese-week,            strength: 0.7 }
+
+- slug: gift-economy-q4
+  title: "Корпоративные и личные подарки — Q4"
+  description: "Декабрь и подарочный сезон 2026 — рост спроса на премиум-наборы, индивидуальную упаковку."
+  source: editorial
+  strength: 0.91
+  started_at: 2026-10-15
+  horizon_days: 90
+  audience_tags: [gift_buyers, gourmets]
+  product_tags: [gift_basket, hand_packed, premium, aged, caviar_premium]
+  influences:
+    - { event: new-year,                 strength: 0.95 }
+    - { event: gift-collection-launch,   strength: 0.95 }
+
+- slug: hyperlocal-moscow
+  title: "Гиперлокальный спрос — Подмосковье"
+  description: "Москва и область — самый плотный спрос на маркетплейсе. Истории про ферму и доставку «вчера-сегодня» работают сильнее всего."
+  source: marketplace
+  strength: 0.67
+  started_at: 2026-02-01
+  horizon_days: 365
+  audience_tags: [parents, gourmets, healthy]
+  product_tags: [moscow_region, local, fresh, regional_specialty]
+  influences:
+    - { event: regional-spotlight-moscow, strength: 1.0 }
+    - { event: russia-day,                strength: 0.5 }
+
+- slug: spring-greens-spike
+  title: "Дикоросы и первая зелень"
+  description: "Кратковременный, но острый всплеск интереса к черемше, крапиве и щавелю — март–май."
+  source: social
+  strength: 0.78
+  started_at: 2026-03-15
+  horizon_days: 75
+  audience_tags: [healthy, gourmets]
+  product_tags: [ramson, nettle, sorrel, microgreen]
+  influences:
+    - { event: spring-greens, strength: 0.95 }

@@ -79,7 +79,7 @@ func (i *Importer) ImportXLSX(path string) (farmers, products int, err error) {
 			farmers++
 		}
 
-		_, err := i.Repo.UpsertProduct(&models.Product{
+		pid, err := i.Repo.UpsertProduct(&models.Product{
 			ProductID: productID, FarmerID: farmerRec,
 			Name: productName, Description: productDesc,
 			Category: category, URL: urlProduct,
@@ -87,6 +87,12 @@ func (i *Importer) ImportXLSX(path string) (farmers, products int, err error) {
 		if err != nil {
 			log.Warn().Err(err).Int("pid", productID).Msg("upsert product failed")
 			continue
+		}
+		// Emit the graph edge alongside the record link. The link is
+		// kept for cheap WHERE lookups; the edge is what graph traversal
+		// queries `SELECT ->owns->product FROM farmer:abc` follow.
+		if err := i.Repo.EnsureOwns(farmerRec, pid); err != nil {
+			log.Warn().Err(err).Int("pid", productID).Msg("emit owns edge failed (non-fatal)")
 		}
 		products++
 		if i_%200 == 0 {

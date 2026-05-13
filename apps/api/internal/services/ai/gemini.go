@@ -198,7 +198,70 @@ func (c *Client) GenerateText(ctx context.Context, system, user string) (string,
 	return c.callGenerate(ctx, body)
 }
 
-// Embed returns a single-vector embedding via Gemini text-embedding-004.
+// EmbedBatch sends up to 100 texts in a single HTTP call via Gemini's
+// :batchEmbedContents endpoint. Returns vectors in the SAME order as `texts`.
+//
+// This is the cost-critical path: a full catalog re-embed (3,491 products)
+// drops from ~3,500 single calls to ~35 batched calls — a 99% reduction in
+// request count, and a similar drop in wall time.
+//
+// Note: Gemini caps `requests[].length` at 100; callers must chunk above that.
+func (c *Client) EmbedBatch(ctx context.Context, texts []string) ([][]float64, error) {
+	if c.APIKey == "" {
+		return nil, errors.New("GEMINI_API_KEY missing")
+	}
+	if len(texts) == 0 {
+		return nil, nil
+	}
+	if len(texts) > 100 {
+		return nil, fmt.Errorf("EmbedBatch: max 100 texts per call, got %d", len(texts))
+	}
+
+	reqs := make([]map[string]any, 0, len(texts))
+	for _, t := range texts {
+		reqs = append(reqs, map[string]any{
+			"model": "models/" + c.EmbedModel,
+			"content": map[string]any{
+				"parts": []map[string]any{{"text": t}},
+			},
+			"outputDimensionality": 768,
+		})
+	}
+	reqBody := map[string]any{"requests": reqs}
+	url := fmt.Sprintf("%s/models/%s:batchEmbedContents?key=%s", apiBase, c.EmbedModel, c.APIKey)
+	buf, _ := json.Marshal(reqBody)
+	req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(buf))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := c.HTTP.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	rb, _ := io.ReadAll(resp.Body)
+	if resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("batch embed: %s", string(rb))
+	}
+	var er struct {
+		Embeddings []struct {
+			Values []float64 `json:"values"`
+		} `json:"embeddings"`
+	}
+	if err := json.Unmarshal(rb, &er); err != nil {
+		return nil, err
+	}
+	out := make([][]float64, len(er.Embeddings))
+	for i, e := range er.Embeddings {
+		out[i] = e.Values
+	}
+	return out, nil
+}
+
+// Embed returns a single-vector embedding via Gemini's current embedding API.
+//
+// We force `outputDimensionality: 768` so the result is compatible with our
+// HNSW indexes (which are pinned to DIMENSION 768 in schema.surql). Gemini's
+// current default (`gemini-embedding-001`) supports Matryoshka truncation to
+// 768 / 1536 / 3072 — we pick the smallest tier for speed + storage.
 func (c *Client) Embed(ctx context.Context, text string) ([]float64, error) {
 	if c.APIKey == "" {
 		return nil, errors.New("GEMINI_API_KEY missing")
@@ -209,6 +272,7 @@ func (c *Client) Embed(ctx context.Context, text string) ([]float64, error) {
 		"content": map[string]any{
 			"parts": []map[string]any{{"text": text}},
 		},
+		"outputDimensionality": 768,
 	}
 	buf, _ := json.Marshal(reqBody)
 	req, _ := http.NewRequestWithContext(ctx, "POST", url, bytes.NewReader(buf))

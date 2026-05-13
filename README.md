@@ -5,6 +5,10 @@
 
 A production-grade MVP that ingests a farmer's catalog, matches SKUs against a curated event knowledge base (holidays, Orthodox calendar, themed weeks, seasonality), and uses **Gemini** to generate ready-to-launch multi-channel campaign assets — push, story, blog, recipe, chat-to-repeat-buyer, social — with a deterministic ROI engine on top.
 
+> **SurrealDB-native architecture.** Graph + vector + realtime + AI memory, all in one engine. See [`docs/SURREALDB_ARCHITECTURE.md`](docs/SURREALDB_ARCHITECTURE.md) for the full breakdown.
+
+> **Two environments, two compose files.** Local dev runs natively (API + Web) with SurrealDB in Docker. Production runs everything in containers. See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the Cloudify-ready runbook.
+
 ```
 React + Vite + TS  ◀──REST──▶  Go (Gin)  ◀──HTTP/SQL──▶  SurrealDB (Docker)
                                   │

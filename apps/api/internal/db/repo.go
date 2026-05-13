@@ -19,6 +19,18 @@ type Repo struct {
 
 func NewRepo(c *Client) *Repo { return &Repo{c: c} }
 
+// Raw is a passthrough to the underlying Surreal client for callers that need
+// to issue ad-hoc SQL (e.g. the embedding pipeline). Reserved for short-lived
+// CLIs; production code should add a typed method to this file instead.
+func (r *Repo) Raw(sql string, vars map[string]any) (any, error) {
+	return r.c.Query(sql, vars)
+}
+
+// DecodeRows is the exported sister to decodeQueryRows for the same callers.
+func DecodeRows(raw any, out any) error {
+	return decodeQueryRows(raw, out)
+}
+
 // ----- generic helpers --------------------------------------------------
 
 // decodeQueryRows unmarshals the LAST statement's result into out.

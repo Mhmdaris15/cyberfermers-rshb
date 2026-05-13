@@ -1,0 +1,122 @@
+# =====================================================================
+#  PRODUCTION compose file — full containerised stack.
+#  Run with:  docker compose -f docker-compose.prod.yml up -d --build
+#
+#  Reads its config from .env.production (NOT .env).
+#
+#  Services:
+#    surrealdb  — persistent KV store on a named volume
+#    api        — Go binary, no host bind mounts
+#    web        — Vite static build behind nginx (proxies /api → api:8080)
+#
+#  The web container is the only thing that needs to be exposed to the
+#  internet. The API and DB stay on an internal Docker network. Put a
+#  reverse proxy (Caddy / Nginx / Cloudify-managed) in front of `web`
+#  to terminate TLS.
+# =====================================================================
+
+name: svoe-rodnoe-prod
+
+services:
+  surrealdb:
+    image: surrealdb/surrealdb:v2.1.4
+    container_name: svoe-surreal-prod
+    restart: unless-stopped
+    user: "0:0"
+    command:
+      - start
+      - --user
+      - ${SURREAL_USER:?SURREAL_USER must be set}
+      - --pass
+      - ${SURREAL_PASS:?SURREAL_PASS must be set}
+      - --bind
+      - 0.0.0.0:8000
+      - rocksdb:/data/svoe.db
+    expose:
+      - "8000"            # internal-only; do NOT publish to the host
+    volumes:
+      - surreal_data:/data
+    networks: [svoe-net]
+    healthcheck:
+      test: ["CMD", "/surreal", "isready", "--conn", "http://localhost:8000"]
+      interval: 5s
+      retries: 30
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  api:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: svoe-api-prod
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      # Override the host-side defaults so the API talks to the DB by service name.
+      SURREAL_URL: http://surrealdb:8000
+      API_CORS_ORIGINS: ${API_CORS_ORIGINS:-https://localhost}
+      # Schema and seed files are baked into the image at /app/data — point env there.
+      SCHEMA_PATH: /app/infrastructure/surrealdb/schema.surql
+      EVENTS_YAML_PATH: /app/data/seed/events.yml
+      AUDIENCES_YAML_PATH: /app/data/seed/audiences.yml
+      TRENDS_YAML_PATH: /app/data/seed/trends.yml
+      SEASONAL_WINDOWS_YAML_PATH: /app/data/seed/seasonal_windows.yml
+      XLSX_PATH: /app/data/raw/farmers_sku.xlsx
+    expose:
+      - "8080"            # internal-only; web proxies to it
+    depends_on:
+      surrealdb:
+        condition: service_healthy
+    networks: [svoe-net]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      retries: 5
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      args:
+        # Vite injects this at BUILD time, not runtime. Bake it to whatever
+        # public URL terminates TLS in front of the stack. For same-origin
+        # deploys (recommended), leave empty so the FE uses relative /api.
+        VITE_API_URL: ${PUBLIC_API_URL:-}
+        VITE_APP_NAME: ${PUBLIC_APP_NAME:-Свое Родное · Calendar}
+    container_name: svoe-web-prod
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"   # this is the ONLY internet-facing port
+    depends_on:
+      api:
+        condition: service_healthy
+    networks: [svoe-net]
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  surreal_data:
+    name: svoe_surreal_data_prod
+
+networks:
+  svoe-net:
+    name: svoe-net-prod
+    driver: bridge

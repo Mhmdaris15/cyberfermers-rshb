@@ -1,0 +1,101 @@
+# =====================================================================
+#  Russian-cuisine seasonal product windows.
+#  Wired as `seasonal_window` nodes; `covers` edge from window→event
+#  (e.g. ramson peak → spring-greens event).
+# =====================================================================
+
+- product_concept: "квашеная капуста"
+  label:           "Квашеная капуста — peak"
+  months:          [12, 1, 2]
+  scope:           [russian]
+  status:          peak
+  note:            "Основа зимних щей и закусок."
+  covers:          [winter-pickles]
+
+- product_concept: "крапива"
+  label:           "Крапива молодая — peak"
+  months:          [4, 5]
+  scope:           [russian]
+  status:          peak
+  note:            "Зелёные щи, начинки для пирогов."
+  covers:          [spring-greens]
+
+- product_concept: "черемша"
+  label:           "Черемша — peak"
+  months:          [4, 5]
+  scope:           [russian, caucasian]
+  status:          peak
+  note:            "Узкое окно дикороса; высокий маркетинговый потенциал."
+  covers:          [spring-greens]
+
+- product_concept: "клубника"
+  label:           "Клубника — peak"
+  months:          [6]
+  scope:           [russian, european]
+  status:          peak
+  note:            "Десерты, варенье; самый короткий пик."
+  covers:          [summer-berries]
+
+- product_concept: "малина"
+  label:           "Малина — peak"
+  months:          [7]
+  scope:           [russian, european]
+  status:          peak
+  note:            "Морсы, соусы, начинки."
+  covers:          [summer-berries]
+
+- product_concept: "белые грибы"
+  label:           "Белые грибы — peak"
+  months:          [8, 9]
+  scope:           [russian]
+  status:          peak
+  note:            "Супы, кулебяки, маринады."
+  covers:          [mushroom-season]
+
+- product_concept: "тыква"
+  label:           "Тыква — peak"
+  months:          [9, 10, 11]
+  scope:           [russian]
+  status:          peak
+  note:            "Супы-пюре, запеканки."
+  covers:          [autumn-harvest]
+
+- product_concept: "клюква"
+  label:           "Клюква — peak"
+  months:          [9, 10]
+  scope:           [russian]
+  status:          peak
+  note:            "Соусы к дичи, морсы."
+  covers:          [autumn-harvest]
+
+- product_concept: "облепиха"
+  label:           "Облепиха — peak"
+  months:          [9, 10]
+  scope:           [russian]
+  status:          peak
+  note:            "Мусс, масло, морс."
+  covers:          [autumn-harvest]
+
+- product_concept: "молодой картофель"
+  label:           "Молодой картофель — peak"
+  months:          [6, 7]
+  scope:           [russian]
+  status:          peak
+  note:            "Отварной с укропом и маслом."
+  covers:          [summer-berries]
+
+- product_concept: "судак"
+  label:           "Судак — peak"
+  months:          [3, 4, 5]
+  scope:           [russian]
+  status:          peak
+  note:            "Расстегаи, заливное."
+  covers:          [spring-greens, lent-fasting]
+
+- product_concept: "берёзовый сок"
+  label:           "Берёзовый сок — peak"
+  months:          [4]
+  scope:           [russian]
+  status:          peak
+  note:            "Очень узкое окно; одна неделя."
+  covers:          [spring-greens]

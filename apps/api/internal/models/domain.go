@@ -33,6 +33,7 @@ type Product struct {
 	Category    string    `json:"category"`
 	URL         string    `json:"url,omitempty"`
 	Tags        []string  `json:"tags,omitempty"`
+	Embedding   []float64 `json:"embedding,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -72,6 +73,7 @@ type Event struct {
 	Themes          []string  `json:"themes,omitempty"`
 	Color           string    `json:"color,omitempty"`
 	Icon            string    `json:"icon,omitempty"`
+	Embedding       []float64 `json:"embedding,omitempty"`
 }
 
 // ---- suggestions / actions ----------------------------------------
@@ -178,6 +180,60 @@ type GeneratedContent struct {
 }
 
 // ---- plan board ----------------------------------------------------
+
+// =====================================================================
+//   Knowledge-graph nodes added in the v2 schema rewrite.
+//   Each is a first-class SurrealDB SCHEMAFULL table; many also carry
+//   a `Embedding` field for Gemini KNN.
+// =====================================================================
+
+type Audience struct {
+	ID          string    `json:"id"`
+	Slug        string    `json:"slug"`
+	Label       string    `json:"label"`
+	Description string    `json:"description,omitempty"`
+	IncomeBand  string    `json:"income_band,omitempty"`
+	Interests   []string  `json:"interests,omitempty"`
+	AvgBasket   float64   `json:"avg_basket_rub,omitempty"`
+	Embedding   []float64 `json:"embedding,omitempty"`
+}
+
+type Trend struct {
+	ID            string    `json:"id"`
+	Slug          string    `json:"slug"`
+	Title         string    `json:"title"`
+	Description   string    `json:"description,omitempty"`
+	Source        string    `json:"source"`
+	Strength      float64   `json:"strength"`
+	StartedAt     time.Time `json:"started_at"`
+	HorizonDays   int       `json:"horizon_days"`
+	AudienceTags  []string  `json:"audience_tags,omitempty"`
+	ProductTags   []string  `json:"product_tags,omitempty"`
+	Embedding     []float64 `json:"embedding,omitempty"`
+}
+
+type SeasonalWindow struct {
+	ID             string   `json:"id"`
+	Label          string   `json:"label"`
+	ProductConcept string   `json:"product_concept"`
+	Months         []int    `json:"months"`
+	Scope          []string `json:"scope,omitempty"`
+	Status         string   `json:"status"`
+	Note           string   `json:"note,omitempty"`
+}
+
+// AIMemory is the contextual-intelligence layer. Every relevant user
+// interaction (accept/reject/launch/regenerate/etc.) is appended; the
+// recommender reads back to bias future scoring toward what works.
+type AIMemory struct {
+	ID        string         `json:"id"`
+	FarmerID  string         `json:"farmer_id"`
+	Kind      string         `json:"kind"`
+	SubjectID string         `json:"subject_id,omitempty"`
+	Signal    float64        `json:"signal"`
+	Context   map[string]any `json:"context,omitempty"`
+	CreatedAt time.Time      `json:"created_at"`
+}
 
 // Insight is a proactive recommendation emitted by the insights engine.
 // It is rendered as a card on the "AI Insights" page. Each rule produces

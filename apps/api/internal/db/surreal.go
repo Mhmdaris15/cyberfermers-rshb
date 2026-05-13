@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 
@@ -153,31 +154,34 @@ func (c *Client) post(query string, scoped bool) (any, error) {
 // positions — only into expressions where the encoding rules below are exact.
 // --------------------------------------------------------------------------
 
+// varToken matches `$identifier` boundaries-correctly so $c does NOT eat
+// the leading characters of $created. Allowed identifier chars match
+// Surreal's parser: [A-Za-z_][A-Za-z0-9_]*.
+var varToken = regexp.MustCompile(`\$([A-Za-z_][A-Za-z0-9_]*)`)
+
 func inlineVars(sql string, vars map[string]any) (string, error) {
 	if len(vars) == 0 {
 		return sql, nil
 	}
-	// Replace longer keys first to avoid prefix collisions ($product vs $pro).
-	keys := make([]string, 0, len(vars))
-	for k := range vars {
-		keys = append(keys, k)
-	}
-	// crude length-desc sort
-	for i := 0; i < len(keys); i++ {
-		for j := i + 1; j < len(keys); j++ {
-			if len(keys[j]) > len(keys[i]) {
-				keys[i], keys[j] = keys[j], keys[i]
-			}
+	var firstErr error
+	out := varToken.ReplaceAllStringFunc(sql, func(match string) string {
+		key := match[1:] // strip leading $
+		v, ok := vars[key]
+		if !ok {
+			// Unknown variable — leave as-is so Surreal can resolve it
+			// from a LET binding inside the multi-statement payload.
+			return match
 		}
-	}
-	for _, k := range keys {
-		repl, err := marshalSurreal(vars[k])
-		if err != nil {
-			return "", fmt.Errorf("var %s: %w", k, err)
+		repl, err := marshalSurreal(v)
+		if err != nil && firstErr == nil {
+			firstErr = fmt.Errorf("var %s: %w", key, err)
 		}
-		sql = strings.ReplaceAll(sql, "$"+k, repl)
+		return repl
+	})
+	if firstErr != nil {
+		return "", firstErr
 	}
-	return sql, nil
+	return out, nil
 }
 
 func marshalSurreal(v any) (string, error) {
