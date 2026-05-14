@@ -101,6 +101,8 @@ export interface CalendarBuild {
 
 export type Channel = "push" | "story" | "blog" | "recipe" | "chat" | "social" | "email";
 
+export type ContentStatus = "draft" | "published" | "archived";
+
 export interface GeneratedContent {
   id?: string;
   suggestion_id: string;
@@ -109,6 +111,28 @@ export interface GeneratedContent {
   body: Record<string, any>;
   model?: string;
   prompt_version?: string;
+  // Phase-2 lifecycle (all optional for backwards-compat with old API responses).
+  status?: ContentStatus;
+  current_revision?: number;
+  is_user_edited?: boolean;
+  published_at?: string | null;
+  archived_at?: string | null;
+  updated_at?: string;
+  created_at?: string;
+}
+
+export interface ContentRevision {
+  id: string;
+  content_id: string;
+  revision_number: number;
+  body: Record<string, any>;
+  model?: string | null;
+  prompt_version?: string | null;
+  is_user_edited: boolean;
+  author_id?: string | null;
+  author_username?: string | null;
+  note?: string | null;
+  created_at: string;
 }
 
 export interface PlanCard {

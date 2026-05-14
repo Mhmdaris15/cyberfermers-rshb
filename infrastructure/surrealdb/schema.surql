@@ -175,8 +175,37 @@ DEFINE FIELD body                ON generated_content FLEXIBLE TYPE object;
 DEFINE FIELD model               ON generated_content TYPE string DEFAULT "gemini-2.5-flash";
 DEFINE FIELD prompt_version      ON generated_content TYPE string DEFAULT "v1";
 DEFINE FIELD created_at          ON generated_content TYPE datetime DEFAULT time::now();
+-- Phase-2 additions: lifecycle + revision metadata.
+-- All purely additive — existing rows get defaults on next read.
+DEFINE FIELD status              ON generated_content TYPE string
+                                   ASSERT $value IN ['draft','published','archived']
+                                   DEFAULT 'draft';
+DEFINE FIELD current_revision    ON generated_content TYPE int DEFAULT 1;
+DEFINE FIELD is_user_edited      ON generated_content TYPE bool DEFAULT false;
+DEFINE FIELD published_at        ON generated_content TYPE option<datetime>;
+DEFINE FIELD archived_at         ON generated_content TYPE option<datetime>;
+DEFINE FIELD updated_at          ON generated_content TYPE datetime DEFAULT time::now();
 DEFINE INDEX idx_gc_sug          ON generated_content COLUMNS suggestion;
 DEFINE INDEX idx_gc_pair         ON generated_content COLUMNS suggestion, channel, variant UNIQUE;
+DEFINE INDEX idx_gc_status       ON generated_content COLUMNS status;
+
+-- ── content_revision (append-only history) ─────────────────
+-- One row per write to generated_content (AI gen, user edit, restore).
+-- `author = NONE` denotes an AI-generated revision; a user record means
+-- it was a human edit. The current state always lives in generated_content;
+-- this table is only consulted for "view history" / "restore" UX.
+DEFINE TABLE content_revision SCHEMAFULL;
+DEFINE FIELD content             ON content_revision TYPE record<generated_content>;
+DEFINE FIELD revision_number     ON content_revision TYPE int ASSERT $value > 0;
+DEFINE FIELD body                ON content_revision FLEXIBLE TYPE object;
+DEFINE FIELD model               ON content_revision TYPE option<string>;
+DEFINE FIELD prompt_version      ON content_revision TYPE option<string>;
+DEFINE FIELD is_user_edited      ON content_revision TYPE bool DEFAULT false;
+DEFINE FIELD author              ON content_revision TYPE option<record<app_user>>;
+DEFINE FIELD note                ON content_revision TYPE option<string>;
+DEFINE FIELD created_at          ON content_revision TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_revision_pair_unique ON content_revision FIELDS content, revision_number UNIQUE;
+DEFINE INDEX idx_revision_content     ON content_revision FIELDS content;
 
 -- ── plan_card (kanban node) ─────────────────────────────────
 DEFINE TABLE plan_card SCHEMAFULL;

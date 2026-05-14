@@ -81,6 +81,16 @@ func Register(r *gin.Engine, d *Deps) {
 		authed.POST("/plan/cards", d.AddPlanCard)
 		authed.POST("/plan/cards/move", d.MovePlanCard)
 
+		// ── content lifecycle (phase-2) ────────────────────────────
+		// Spec: docs/superpowers/specs/2026-05-14-content-versioning-design.md
+		authed.GET("/content/:id", d.GetContent)
+		authed.PATCH("/content/:id", d.UpdateContent)
+		authed.POST("/content/:id/publish", d.PublishContent)
+		authed.POST("/content/:id/archive", d.ArchiveContent)
+		authed.POST("/content/:id/unarchive", d.UnarchiveContent)
+		authed.GET("/content/:id/revisions", d.ListContentRevisions)
+		authed.POST("/content/:id/revisions/:n/restore", d.RestoreContentRevision)
+
 		// ── admin-only ───────────────────────────────────────────────
 		admin := authed.Group("/admin", middleware.RequireAdmin())
 		admin.GET("/users", d.ListUsers)

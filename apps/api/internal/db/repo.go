@@ -574,27 +574,86 @@ func (r *Repo) GetSuggestion(id string) (*models.Suggestion, error) {
 
 // ----- generated_content ------------------------------------------------
 
+// UpsertGenerated writes an AI-authored content row and snapshots a
+// content_revision atomically.
+//
+//   - First write for the (suggestion, channel, variant) tuple: creates
+//     generated_content with current_revision=1, status=draft, and a
+//     matching content_revision row (author=NONE, note="AI generation").
+//   - Subsequent writes (re-generation): increments current_revision,
+//     updates body/model/prompt_version, and inserts a new
+//     content_revision (author=NONE, note="AI regeneration").
+//
+// The /generate handler's cache-hit short-circuit means we are only
+// called when the body actually differs from what's stored, so we can
+// always increment the revision counter — no need to compare bodies
+// inside the query.
+//
+// Mutates gc.ID with the bare record id of the upserted row.
 func (r *Repo) UpsertGenerated(gc *models.GeneratedContent) error {
 	sug := ensureRecordID(gc.SuggestionID, "suggestion")
-	_, err := r.c.Query(`
-	  LET $row = (SELECT id FROM generated_content
+	q := `
+	  LET $row = (SELECT id, current_revision FROM generated_content
 	    WHERE suggestion = $s AND channel = $ch AND variant = $v LIMIT 1);
 	  IF array::len($row) > 0 {
-	    UPDATE $row[0].id MERGE { body: $body, model: $model, prompt_version: $pv };
+	    LET $cid  = $row[0].id;
+	    LET $next = $row[0].current_revision + 1;
+	    UPDATE $cid SET
+	      body             = $body,
+	      model            = $model,
+	      prompt_version   = $pv,
+	      current_revision = $next,
+	      updated_at       = time::now();
+	    CREATE content_revision SET
+	      content         = $cid,
+	      revision_number = $next,
+	      body            = $body,
+	      model           = $model,
+	      prompt_version  = $pv,
+	      is_user_edited  = false,
+	      author          = NONE,
+	      note            = "AI regeneration";
+	    RETURN meta::id($cid);
 	  } ELSE {
-	    CREATE generated_content SET
-	      suggestion = $s, channel = $ch, variant = $v, body = $body,
-	      model = $model, prompt_version = $pv;
-	  };`,
-		map[string]any{
-			"s":     sug,
-			"ch":    string(gc.Channel),
-			"v":     gc.Variant,
-			"body":  gc.Body,
-			"model": gc.Model,
-			"pv":    gc.PromptVersion,
-		})
-	return err
+	    LET $created = (CREATE generated_content SET
+	      suggestion       = $s,
+	      channel          = $ch,
+	      variant          = $v,
+	      body             = $body,
+	      model            = $model,
+	      prompt_version   = $pv,
+	      current_revision = 1,
+	      status           = 'draft',
+	      is_user_edited   = false,
+	      updated_at       = time::now());
+	    LET $cid = $created[0].id;
+	    CREATE content_revision SET
+	      content         = $cid,
+	      revision_number = 1,
+	      body            = $body,
+	      model           = $model,
+	      prompt_version  = $pv,
+	      is_user_edited  = false,
+	      author          = NONE,
+	      note            = "AI generation";
+	    RETURN meta::id($cid);
+	  };`
+	res, err := r.c.Query(q, map[string]any{
+		"s":     sug,
+		"ch":    string(gc.Channel),
+		"v":     gc.Variant,
+		"body":  gc.Body,
+		"model": gc.Model,
+		"pv":    gc.PromptVersion,
+	})
+	if err != nil {
+		return err
+	}
+	var id string
+	if err := decodeQueryRows(res, &id); err == nil && id != "" {
+		gc.ID = id
+	}
+	return nil
 }
 
 func (r *Repo) ListGeneratedForSuggestion(suggestionID string) ([]models.GeneratedContent, error) {

@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/ui/empty";
 import { cn } from "@/lib/utils";
 import type { Channel, GeneratedContent } from "@/lib/types";
 import { Sparkles } from "lucide-react";
+import { ContentLifecycleBar } from "./ContentLifecycleBar";
 
 const channels: { id: Channel; label: string }[] = [
   { id: "push",   label: "Пуш" },
@@ -107,6 +108,7 @@ function VariantStack({ channel, items }: { channel: Channel; items: GeneratedCo
         </div>
       )}
       <RenderChannel channel={channel} body={items[safeIdx].body} />
+      <ContentLifecycleBar content={items[safeIdx]} />
     </div>
   );
 }

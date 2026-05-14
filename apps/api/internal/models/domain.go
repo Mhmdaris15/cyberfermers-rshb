@@ -168,6 +168,13 @@ type SocialContent struct {
 	Hashtags []string `json:"hashtags"`
 }
 
+// Content lifecycle values. Mirrors the SurrealDB ASSERT.
+const (
+	ContentStatusDraft     = "draft"
+	ContentStatusPublished = "published"
+	ContentStatusArchived  = "archived"
+)
+
 type GeneratedContent struct {
 	ID            string         `json:"id"`
 	SuggestionID  string         `json:"suggestion_id"`
@@ -177,6 +184,32 @@ type GeneratedContent struct {
 	Model         string         `json:"model"`
 	PromptVersion string         `json:"prompt_version"`
 	CreatedAt     time.Time      `json:"created_at"`
+
+	// Phase-2 lifecycle additions. Pointer-time fields are nil when the
+	// transition has not happened yet (e.g. PublishedAt nil while status=draft).
+	Status          string     `json:"status"`
+	CurrentRevision int        `json:"current_revision"`
+	IsUserEdited    bool       `json:"is_user_edited"`
+	PublishedAt     *time.Time `json:"published_at,omitempty"`
+	ArchivedAt      *time.Time `json:"archived_at,omitempty"`
+	UpdatedAt       time.Time  `json:"updated_at"`
+}
+
+// ContentRevision is an append-only audit log of every write to a
+// generated_content row. author == nil means AI-generated; concrete
+// author means human edit/restore.
+type ContentRevision struct {
+	ID             string         `json:"id"`
+	ContentID      string         `json:"content_id"`
+	RevisionNumber int            `json:"revision_number"`
+	Body           map[string]any `json:"body"`
+	Model          *string        `json:"model,omitempty"`
+	PromptVersion  *string        `json:"prompt_version,omitempty"`
+	IsUserEdited   bool           `json:"is_user_edited"`
+	AuthorID       *string        `json:"author_id,omitempty"`
+	AuthorUsername *string        `json:"author_username,omitempty"` // joined for display
+	Note           *string        `json:"note,omitempty"`
+	CreatedAt      time.Time      `json:"created_at"`
 }
 
 // ---- plan board ----------------------------------------------------
