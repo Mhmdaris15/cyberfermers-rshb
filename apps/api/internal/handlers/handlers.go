@@ -126,6 +126,14 @@ func Register(r *gin.Engine, d *Deps) {
 		authed.POST("/farmers/:id/recipes", d.CreateFarmerRecipe)
 		authed.GET("/recipes/:id", d.GetRecipe)
 
+		// ── social module (phase-7) ────────────────────────────────
+		// Spec: docs/superpowers/specs/2026-05-14-social-module-design.md
+		// Social posts are generated_content with channel='social'.
+		// Plan-card linked to Phase-3 `social` board (not storytelling).
+		authed.GET("/farmers/:id/social-posts", d.ListFarmerSocialPosts)
+		authed.POST("/farmers/:id/social-posts", d.CreateFarmerSocialPost)
+		authed.GET("/social-posts/:id", d.GetSocialPost)
+
 		// ── admin-only ───────────────────────────────────────────────
 		admin := authed.Group("/admin", middleware.RequireAdmin())
 		admin.GET("/users", d.ListUsers)
