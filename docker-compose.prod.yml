@@ -72,11 +72,16 @@ services:
       SEASONAL_WINDOWS_YAML_PATH: /app/data/seed/seasonal_windows.yml
       XLSX_PATH: /app/data/raw/farmers_sku.xlsx
     expose:
-      - "8080"            # internal-only; web proxies to it
+      - "8080"            # reachable from web (svoe-net) AND Coolify Traefik (coolify net)
     depends_on:
       surrealdb:
         condition: service_healthy
-    networks: [svoe-net]
+    # Attach to BOTH networks so:
+    #   - svoe-net  → web's nginx can still proxy /api/* to api:8080 (same-origin deploys)
+    #   - coolify   → Coolify's Traefik can route a dedicated subdomain
+    #                  (e.g. api-cyberfermers-...) directly to this container
+    # Without `coolify` Traefik can't reach the container and dial-times-out → 504.
+    networks: [svoe-net, coolify]
     healthcheck:
       test:
         - CMD
