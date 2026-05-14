@@ -75,7 +75,12 @@ export const tolgee = instance.init({
   language: detectInitialLanguage(),
   fallbackLanguage: FALLBACK,
   availableLanguages: [...SUPPORTED_LANGS],
-  defaultNs: "common",
+  // No explicit namespace: all keys live in Tolgee's empty/default
+  // namespace, which matches how `staticData: { ru, en }` is registered.
+  // (Earlier we set defaultNs: "common" — that caused every t() lookup
+  // to miss because staticData wasn't keyed by `"<lang>:common"`. The
+  // dot-prefixed keys like `landing.hero.title.line1` are flat strings,
+  // not namespace separators — FormatSimple treats dots as literal.)
   // Static bundles always present — guarantees no flash of untranslated content.
   staticData: { ru, en },
   // Cloud connection lights up dev tools when keys are set. Prod ignores both

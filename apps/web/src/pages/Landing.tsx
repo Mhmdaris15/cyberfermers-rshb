@@ -134,14 +134,14 @@ export function Landing() {
             <FloatingTag
               className="left-1 top-6 sm:left-0"
               accent="leaf"
-              label="окно сезона"
-              value="апр — май"
+              label={t("landing.tag.season.label")}
+              value={t("landing.tag.season.value")}
             />
             <FloatingTag
               className="-bottom-3 right-2"
               accent="amber"
-              label="событие"
-              value="Пасха · 12.04"
+              label={t("landing.tag.event.label")}
+              value={t("landing.tag.event.value")}
             />
           </motion.div>
         </div>
@@ -158,20 +158,20 @@ export function Landing() {
         <header className="mb-12 flex items-end justify-between gap-6">
           <div>
             <span className="smallcaps text-[11px] text-ink-mute">
-              Pipeline
+              {t("landing.how.eyebrow")}
             </span>
             <h2 className="mt-2 font-display text-3xl font-semibold tracking-tight md:text-5xl">
-              Один сервис<br className="hidden md:block" />
-              <span className="text-ink-mute">шесть рычагов роста.</span>
+              {t("landing.how.title.line1")}<br className="hidden md:block" />
+              <span className="text-ink-mute">{t("landing.how.title.line2")}</span>
             </h2>
           </div>
-          <Badge variant="leaf">MVP за 9 дней</Badge>
+          <Badge variant="leaf">{t("landing.how.badge")}</Badge>
         </header>
 
         <div className="grid gap-px overflow-hidden rounded-2xl border border-line/70 bg-line/40 md:grid-cols-2 lg:grid-cols-3">
           {features.map((f, i) => (
             <motion.article
-              key={f.title}
+              key={f.titleKey}
               initial={{ opacity: 0, y: 14 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-50px" }}
@@ -190,9 +190,9 @@ export function Landing() {
                 </span>
               </div>
               <h3 className="font-display text-xl font-semibold leading-tight">
-                {f.title}
+                {t(f.titleKey)}
               </h3>
-              <p className="text-sm leading-relaxed text-ink-dim">{f.text}</p>
+              <p className="text-sm leading-relaxed text-ink-dim">{t(f.bodyKey)}</p>
             </motion.article>
           ))}
         </div>
@@ -217,22 +217,22 @@ export function Landing() {
           />
           <div className="relative grid items-end gap-10 md:grid-cols-[2fr,1fr]">
             <div>
-              <span className="smallcaps text-[11px] text-ink-mute">Тезис</span>
+              <span className="smallcaps text-[11px] text-ink-mute">{t("landing.proof.eyebrow")}</span>
               <p className="mt-3 font-display text-2xl font-semibold leading-snug md:text-4xl">
-                <em className="not-italic gradient-text">10 000 фермеров</em>
-                {" "}на маркетплейсе. У 80% из них{" "}
-                <span className="ink-gradient">нет маркетингового плана.</span>
-                {" "}Этот сервис закрывает эту брешь&nbsp;— автоматически.
+                <em className="not-italic gradient-text">{t("landing.proof.body.bold")}</em>
+                {" "}{t("landing.proof.body.before")}{" "}
+                <span className="ink-gradient">{t("landing.proof.body.middle")}</span>
+                {" "}{t("landing.proof.body.after")}
               </p>
             </div>
             <div className="flex flex-col gap-3">
               <Button asChild size="lg">
                 <Link to="/farmers">
-                  Выбрать фермера <ArrowRight className="h-4 w-4" />
+                  {t("common.cta.pickFarmer")} <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <p className="text-xs text-ink-mute">
-                Локальное демо · React · Go · SurrealDB · Gemini 2.5
+                {t("landing.proof.note")}
               </p>
             </div>
           </div>
@@ -241,9 +241,9 @@ export function Landing() {
 
       <footer className="border-t border-line/60 py-10">
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 md:flex-row">
-          <p className="text-xs text-ink-mute">© 2026 · Команда RSHB Hackathon</p>
+          <p className="text-xs text-ink-mute">{t("landing.footer.copyright")}</p>
           <p className="font-mono text-[11px] text-ink-mute">
-            React · Vite · Go · SurrealDB · Gemini 2.5
+            {t("landing.footer.stack")}
           </p>
         </div>
       </footer>
@@ -289,34 +289,10 @@ function FloatingTag({
 }
 
 const features = [
-  {
-    title: "Календарь событий",
-    text: "40+ событий в KB: гос-праздники, православный календарь, сезоны, тематические недели, тренды маркетплейса.",
-    icon: Calendar,
-  },
-  {
-    title: "AI-кампании в один клик",
-    text: "Gemini генерирует push, story, blog, recipe, chat, social — в одном structured-JSON фан-ауте, без галлюцинаций.",
-    icon: Bot,
-  },
-  {
-    title: "Детерминированный ROI",
-    text: "Прогноз заказов и выручки — закрытая формула с явными допущениями. Формула на экране.",
-    icon: LineChart,
-  },
-  {
-    title: "Авто-теггинг SKU",
-    text: "Правила + LLM. Каждый продукт получает 3–8 тегов: easter, premium, vegan, gift, regional_specialty…",
-    icon: Layers,
-  },
-  {
-    title: "План-доска кампаний",
-    text: "Канбан: Предложено → Запланировано → В эфире → Завершено. Перетаскивание с пружинной анимацией.",
-    icon: Workflow,
-  },
-  {
-    title: "Глобальный режим",
-    text: "Архитектурно готов к мультирегиональности. Сейчас все 65 фермеров — Подмосковье, расширение тривиально.",
-    icon: Globe2,
-  },
+  { titleKey: "landing.features.calendar.title",    bodyKey: "landing.features.calendar.body",    icon: Calendar },
+  { titleKey: "landing.features.aiCampaigns.title", bodyKey: "landing.features.aiCampaigns.body", icon: Bot },
+  { titleKey: "landing.features.roi.title",         bodyKey: "landing.features.roi.body",         icon: LineChart },
+  { titleKey: "landing.features.tagging.title",     bodyKey: "landing.features.tagging.body",     icon: Layers },
+  { titleKey: "landing.features.kanban.title",      bodyKey: "landing.features.kanban.body",      icon: Workflow },
+  { titleKey: "landing.features.global.title",      bodyKey: "landing.features.global.body",      icon: Globe2 },
 ];

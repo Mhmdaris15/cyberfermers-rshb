@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useTranslate } from "@tolgee/react";
 import {
   ArrowRight, Bot, Check, ChevronRight, Cpu, Layers, Loader2, Sparkles,
   TerminalSquare, Zap,
@@ -34,6 +35,7 @@ type Stage = "pick" | "thinking" | "reveal";
 
 export function LandingDemo() {
   const reduce = useReducedMotion();
+  const { t } = useTranslate();
 
   const [farmer, setFarmer] = useState<MockFarmer>(MOCK_FARMERS[0]);
   const [event, setEvent]   = useState<MockEvent>(MOCK_EVENTS[1]);
@@ -90,16 +92,14 @@ export function LandingDemo() {
         <div>
           <span className="smallcaps text-[11px] text-leaf">
             <Sparkles className="mr-1 inline h-3 w-3" />
-            интерактивное демо
+            {t("demo.eyebrow")}
           </span>
           <h2 className="mt-2 font-display text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
-            Попробуйте прямо здесь<br className="hidden md:block" />
-            <span className="gradient-text italic">— без логина</span>
+            {t("demo.title.line1")}<br className="hidden md:block" />
+            <span className="gradient-text italic">{t("demo.title.line2")}</span>
           </h2>
           <p className="mt-3 max-w-xl text-sm leading-relaxed text-ink-dim">
-            Выберите ферму, контекст, нажмите «Запустить ИИ» — и&nbsp;увидите тот
-            же&nbsp;поток, что&nbsp;запускают живые пользователи: 7&nbsp;стадий
-            рекомендатора, готовые черновики контента и&nbsp;план кампании.
+            {t("demo.subtitle")}
           </p>
         </div>
         <div className="hidden items-center gap-2 rounded-full border border-line bg-bg-elevated/60 px-3 py-1.5 text-[10px] text-ink-mute md:inline-flex">
@@ -107,14 +107,14 @@ export function LandingDemo() {
             <span className="absolute inset-0 animate-ping rounded-full bg-leaf opacity-60" />
             <span className="relative h-1.5 w-1.5 rounded-full bg-leaf" />
           </span>
-          <span className="smallcaps">command center · live</span>
+          <span className="smallcaps">{t("demo.live")}</span>
         </div>
       </header>
 
       {/* ── Stage 1 + 2 — picker ───────────────────────────────────── */}
       <div className="grid gap-6 lg:grid-cols-[1.05fr_minmax(0,1fr)]">
         {/* Farmer column */}
-        <Panel title="01 · Выберите ферму" icon={<Layers className="h-3 w-3" />}>
+        <Panel title={t("demo.panel.farmer")} icon={<Layers className="h-3 w-3" />}>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-3">
             {MOCK_FARMERS.map((f) => (
               <FarmerTile
@@ -128,10 +128,10 @@ export function LandingDemo() {
         </Panel>
 
         {/* Context column */}
-        <Panel title="02 · Контекст" icon={<Zap className="h-3 w-3" />}>
+        <Panel title={t("demo.panel.context")} icon={<Zap className="h-3 w-3" />}>
           <div className="space-y-4">
             <div>
-              <div className="smallcaps mb-1.5 text-[10px] text-ink-mute">событие или тренд</div>
+              <div className="smallcaps mb-1.5 text-[10px] text-ink-mute">{t("demo.context.eventLabel")}</div>
               <div className="flex flex-wrap gap-1.5">
                 {MOCK_EVENTS.map((e) => (
                   <button
@@ -143,15 +143,15 @@ export function LandingDemo() {
                         : "border-line bg-bg-elevated/60 text-ink-dim hover:bg-bg-subtle"
                     }`}
                   >
-                    {e.label}
+                    {t(e.labelKey)}
                     <span className="text-ink-mute">·</span>
-                    <span className="font-mono tabular-nums">{e.date}</span>
+                    <span className="font-mono tabular-nums">{t(e.dateKey)}</span>
                   </button>
                 ))}
               </div>
             </div>
             <div>
-              <div className="smallcaps mb-1.5 text-[10px] text-ink-mute">аудитория</div>
+              <div className="smallcaps mb-1.5 text-[10px] text-ink-mute">{t("demo.context.audienceLabel")}</div>
               <div className="flex flex-wrap gap-1.5">
                 {MOCK_AUDIENCES.map((a) => (
                   <button
@@ -163,17 +163,20 @@ export function LandingDemo() {
                         : "border-line bg-bg-elevated/60 text-ink-dim hover:bg-bg-subtle"
                     }`}
                   >
-                    {a.label}
+                    {t(a.labelKey)}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="rounded-md border border-line/60 bg-bg-subtle/40 px-3 py-2 text-[11px] leading-relaxed text-ink-mute">
-              <span className="smallcaps text-leaf">контекст · </span>
-              {farmer.name} · {farmer.region} · {farmer.skus}&nbsp;SKU ·{" "}
-              событие&nbsp;«{event.label}» · аудитория{" "}
-              {MOCK_AUDIENCES.find((a) => a.slug === audience)?.label}
+              <span className="smallcaps text-leaf">{t("demo.context.summary.prefix")} </span>
+              {t(farmer.nameKey)} · {t(farmer.regionKey)} · {farmer.skus}&nbsp;{t("demo.context.summary.sku")} ·{" "}
+              {t("demo.context.summary.event")}&nbsp;«{t(event.labelKey)}» · {t("demo.context.summary.audience")}{" "}
+              {(() => {
+                const a = MOCK_AUDIENCES.find((x) => x.slug === audience);
+                return a ? t(a.labelKey) : "";
+              })()}
             </div>
 
             <button
@@ -185,12 +188,12 @@ export function LandingDemo() {
               {stage === "thinking" ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  ИИ обрабатывает…
+                  {t("demo.cta.processing")}
                 </>
               ) : (
                 <>
                   <Bot className="h-4 w-4" />
-                  Запустить ИИ
+                  {t("demo.cta.run")}
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </>
               )}
@@ -259,6 +262,7 @@ function FarmerTile({
   farmer, active, onPick,
 }: { farmer: MockFarmer; active: boolean; onPick: () => void }) {
   const Icon = farmer.icon;
+  const { t } = useTranslate();
   return (
     <motion.button
       type="button"
@@ -280,17 +284,17 @@ function FarmerTile({
           <Icon className="h-3.5 w-3.5" />
         </span>
         <span className="font-mono text-[9px] uppercase tracking-widest text-ink-mute">
-          {farmer.category}
+          {t(farmer.categoryKey)}
         </span>
       </div>
-      <h3 className="line-clamp-1 text-sm font-semibold text-ink">{farmer.name}</h3>
-      <p className="line-clamp-2 text-[11px] leading-snug text-ink-dim">{farmer.blurb}</p>
+      <h3 className="line-clamp-1 text-sm font-semibold text-ink">{t(farmer.nameKey)}</h3>
+      <p className="line-clamp-2 text-[11px] leading-snug text-ink-dim">{t(farmer.blurbKey)}</p>
       <div className="mt-1 flex items-center justify-between text-[10px] text-ink-mute">
         <span className="font-mono tabular-nums">{farmer.skus} SKU</span>
         <span className={`rounded-full px-1.5 py-0.5 text-[9px] ${
           active ? `bg-${farmer.tone}/20 text-${farmer.tone}` : "bg-bg-subtle text-ink-mute"
         }`}>
-          {farmer.badge}
+          {t(farmer.badgeKey)}
         </span>
       </div>
       {active && (
@@ -307,6 +311,7 @@ function FarmerTile({
 // ─── thinking panel — terminal-style streaming ────────────────────────
 
 function ThinkingPanel({ streamIdx }: { streamIdx: number }) {
+  const { t } = useTranslate();
   return (
     <div className="glass-strong relative overflow-hidden rounded-2xl">
       <div
@@ -319,14 +324,14 @@ function ThinkingPanel({ streamIdx }: { streamIdx: number }) {
       <div className="flex items-center justify-between border-b border-line/60 bg-bg-subtle/60 px-4 py-2.5">
         <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-leaf">
           <TerminalSquare className="h-3 w-3" />
-          ии · pipeline · live
+          {t("demo.thinking.title")}
         </div>
         <div className="flex items-center gap-1.5 text-[10px] text-ink-mute">
           <span className="relative h-1.5 w-1.5">
             <span className="absolute inset-0 animate-ping rounded-full bg-amber opacity-60" />
             <span className="relative h-1.5 w-1.5 rounded-full bg-amber" />
           </span>
-          <span className="font-mono">running</span>
+          <span className="font-mono">{t("demo.thinking.running")}</span>
         </div>
       </div>
       <div className="space-y-1 px-4 py-4 font-mono text-[12px] leading-relaxed">
@@ -337,7 +342,7 @@ function ThinkingPanel({ streamIdx }: { streamIdx: number }) {
             <div key={i} className="text-ink-mute/30">
               <span>$ </span>
               <span>{s.cmd}</span>
-              <span className="text-ink-mute/20"> · ожидание</span>
+              <span className="text-ink-mute/20"> · {t("demo.thinking.waiting")}</span>
             </div>
           );
           return (
@@ -358,7 +363,7 @@ function ThinkingPanel({ streamIdx }: { streamIdx: number }) {
               ) : (
                 <span className="ml-2 inline-flex items-center gap-1 text-amber">
                   <Cpu className="h-3 w-3 animate-pulse" />
-                  <span className="text-ink-mute">обработка…</span>
+                  <span className="text-ink-mute">{t("demo.thinking.processing")}</span>
                   <span className="ml-0.5 inline-block h-3 w-1.5 animate-pulse bg-leaf" aria-hidden />
                 </span>
               )}
@@ -373,20 +378,21 @@ function ThinkingPanel({ streamIdx }: { streamIdx: number }) {
 // ─── reveal — header banner ───────────────────────────────────────────
 
 function RevealHeader({ onReset }: { onReset: () => void }) {
+  const { t } = useTranslate();
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-leaf/40 bg-leaf/5 px-4 py-3">
       <div className="flex items-center gap-2 text-sm text-ink">
         <Check className="h-4 w-4 text-leaf" />
-        <span className="font-medium">Готово.</span>
+        <span className="font-medium">{t("demo.reveal.done")}</span>
         <span className="text-ink-dim">
-          4&nbsp;рекомендации · 4&nbsp;черновика контента · 3&nbsp;карточки в&nbsp;плане
+          {t("demo.reveal.summary", { recs: "4", content: "4", plan: "3" })}
         </span>
       </div>
       <button
         onClick={onReset}
         className="text-xs text-ink-mute transition-colors hover:text-ink"
       >
-        ↺ запустить ещё раз
+        {t("demo.reveal.again")}
       </button>
     </div>
   );
@@ -395,21 +401,22 @@ function RevealHeader({ onReset }: { onReset: () => void }) {
 // ─── reveal — recommendations deck ────────────────────────────────────
 
 function RecommendationsDeck() {
+  const { t } = useTranslate();
   return (
     <div className="glass-strong overflow-hidden rounded-2xl">
       <div className="flex items-center justify-between border-b border-line/60 bg-bg-subtle/60 px-4 py-2.5">
         <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-ink-mute">
           <Sparkles className="h-3 w-3" />
-          рекомендации · ranked
+          {t("demo.recs.title")}
         </div>
         <span className="font-mono text-[10px] text-ink-mute">
-          {MOCK_RECS.length} результата
+          {t("demo.recs.count", { n: String(MOCK_RECS.length) })}
         </span>
       </div>
       <ul className="divide-y divide-line/40">
         {MOCK_RECS.map((r, i) => (
           <motion.li
-            key={r.title}
+            key={r.titleKey}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.28, delay: 0.05 + i * 0.05 }}
@@ -420,11 +427,11 @@ function RecommendationsDeck() {
                 #{i + 1}
               </div>
               <div className="min-w-0 flex-1">
-                <h4 className="text-sm font-semibold text-ink">{r.title}</h4>
+                <h4 className="text-sm font-semibold text-ink">{t(r.titleKey)}</h4>
                 <div className="mt-0.5 flex items-baseline gap-2 text-[11px] text-ink-mute">
-                  <span>{r.event}</span>
+                  <span>{t(r.eventKey)}</span>
                   <span>·</span>
-                  <span>{r.audience}</span>
+                  <span>{t(r.audienceKey)}</span>
                 </div>
                 <div className="mt-1.5 flex flex-wrap items-center gap-1">
                   {r.reasons.map((c) => (
@@ -440,7 +447,10 @@ function RecommendationsDeck() {
               <div className="text-right">
                 <ConfidenceBar value={r.confidence} tone={r.tone} />
                 <div className="mt-1 text-[10px] text-amber">
-                  +{r.delta_orders} зак. · +{Math.round(r.delta_revenue_rub / 1000)}k₽
+                  {t("demo.recs.delta", {
+                    orders: String(r.delta_orders),
+                    rev: String(Math.round(r.delta_revenue_rub / 1000)),
+                  })}
                 </div>
               </div>
             </div>
@@ -474,20 +484,27 @@ function ConfidenceBar({ value, tone }: { value: number; tone: string }) {
 // ─── reveal — ROI + Kanban preview ────────────────────────────────────
 
 function RoiAndKanban() {
+  const { t } = useTranslate();
   // Animate the ROI delta counter from 0 to its target.
   const [roi, setRoi] = useState(0);
   const target = 37;
   useEffect(() => {
     let start: number | null = null;
     const dur = 1200;
-    function step(t: number) {
-      if (start === null) start = t;
-      const p = Math.min(1, (t - start) / dur);
+    function step(ts: number) {
+      if (start === null) start = ts;
+      const p = Math.min(1, (ts - start) / dur);
       setRoi(Math.round(p * target));
       if (p < 1) requestAnimationFrame(step);
     }
     requestAnimationFrame(step);
   }, []);
+
+  const colKeys = {
+    proposed: "demo.plan.col.proposed",
+    planned: "demo.plan.col.planned",
+    live: "demo.plan.col.live",
+  } as const;
 
   return (
     <div className="space-y-4">
@@ -498,18 +515,18 @@ function RoiAndKanban() {
           className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-amber/25 blur-3xl"
         />
         <div className="smallcaps text-[10px] text-amber">
-          прогноз · 30 дней
+          {t("demo.roi.eyebrow")}
         </div>
         <div className="mt-1 flex items-baseline gap-2">
           <span className="font-display text-5xl font-semibold tabular-nums text-ink">
             +{roi}%
           </span>
-          <span className="text-sm text-ink-mute">к&nbsp;выручке</span>
+          <span className="text-sm text-ink-mute">{t("demo.roi.toRevenue")}</span>
         </div>
         <div className="mt-2 text-xs leading-relaxed text-ink-dim">
-          Детерминированная формула. Без скрытых коэффициентов.{" "}
-          <span className="text-leaf">+370&nbsp;заказов</span>,{" "}
-          <span className="text-amber">+912&nbsp;000&nbsp;₽</span>.
+          {t("demo.roi.body.before")}{" "}
+          <span className="text-leaf">{t("demo.roi.body.orders")}</span>,{" "}
+          <span className="text-amber">{t("demo.roi.body.revenue")}</span>.
         </div>
       </div>
 
@@ -518,7 +535,7 @@ function RoiAndKanban() {
         <div className="flex items-center justify-between border-b border-line/60 bg-bg-subtle/60 px-4 py-2.5">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-ink-mute">
             <Layers className="h-3 w-3" />
-            план · превью
+            {t("demo.plan.title")}
           </div>
         </div>
         <div className="grid grid-cols-3 gap-px bg-line/40">
@@ -529,11 +546,11 @@ function RoiAndKanban() {
                 <div className={`mb-1.5 smallcaps text-[9px] ${
                   col === "live" ? "text-amber" : col === "planned" ? "text-leaf" : "text-ink-mute"
                 }`}>
-                  {col === "proposed" ? "идея" : col === "planned" ? "запланир." : "в эфире"}
+                  {t(colKeys[col])}
                 </div>
                 {cards.map((c, i) => (
                   <motion.div
-                    key={c.title}
+                    key={c.titleKey}
                     initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.15 + i * 0.05 }}
@@ -542,10 +559,10 @@ function RoiAndKanban() {
                     }`}
                   >
                     <div className="line-clamp-2 text-[11px] leading-snug text-ink">
-                      {c.title}
+                      {t(c.titleKey)}
                     </div>
                     <div className="mt-1 flex items-center justify-between text-[9px] text-ink-mute">
-                      <span>{c.due}</span>
+                      <span>{t(c.dueKey)}</span>
                       <span className="font-mono">{c.channels.join(" · ")}</span>
                     </div>
                   </motion.div>
@@ -562,6 +579,7 @@ function RoiAndKanban() {
 // ─── reveal — content channel tabs ────────────────────────────────────
 
 function ContentDeck() {
+  const { t } = useTranslate();
   const [active, setActive] = useState<typeof MOCK_CONTENT[number]["channel"]>("push");
   const draft = useMemo(
     () => MOCK_CONTENT.find((d) => d.channel === active) ?? MOCK_CONTENT[0],
@@ -572,7 +590,7 @@ function ContentDeck() {
       <div className="flex items-center justify-between border-b border-line/60 bg-bg-subtle/60 px-4 py-2.5">
         <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-ink-mute">
           <Sparkles className="h-3 w-3" />
-          контент · мультиканально
+          {t("demo.content.title")}
         </div>
         <div className="flex gap-1">
           {MOCK_CONTENT.map((c) => (
@@ -602,10 +620,10 @@ function ContentDeck() {
           {/* the AI-drafted text */}
           <div className="bg-bg-elevated px-5 py-4">
             <h4 className="font-display text-lg font-semibold leading-tight">
-              {draft.title}
+              {t(draft.titleKey)}
             </h4>
             <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-ink-dim">
-              {draft.body}
+              {t(draft.bodyKey)}
             </p>
             <div className="mt-3 flex items-center gap-2 text-[10px] text-ink-mute">
               <span className="rounded bg-bg-subtle px-1.5 py-0.5 font-mono">
@@ -614,10 +632,10 @@ function ContentDeck() {
               <span>·</span>
               <span>prompt v3</span>
               <span>·</span>
-              <span>847&nbsp;токенов</span>
+              <span>{t("demo.content.metaTokens")}</span>
               <span className="ml-auto inline-flex items-center gap-1 text-leaf">
                 <Check className="h-3 w-3" />
-                сохранён как draft
+                {t("demo.content.metaSaved")}
               </span>
             </div>
           </div>
@@ -625,30 +643,16 @@ function ContentDeck() {
           {/* render hints sidebar — what the channel actually does */}
           <div className="bg-bg-subtle/60 px-5 py-4 text-[11px] leading-relaxed text-ink-mute">
             <div className="smallcaps mb-2 text-[10px] text-leaf">
-              как это публикуется
+              {t("demo.content.howPublished")}
             </div>
-            <p>{channelHint(draft.channel)}</p>
+            <p>{t(`demo.content.hint.${draft.channel}`)}</p>
             <div className="mt-3 inline-flex items-center gap-1 text-ink-dim">
               <ChevronRight className="h-3 w-3" />
-              редактируется в&nbsp;продуктовой панели
+              {t("demo.content.editsIn")}
             </div>
           </div>
         </motion.div>
       </AnimatePresence>
     </div>
   );
-}
-
-function channelHint(channel: string): string {
-  switch (channel) {
-    case "push":
-      return "Уходит как push-уведомление подписчикам. ИИ соблюдает лимит iOS 178 символов в теле и предлагает emoji-префикс.";
-    case "story":
-      return "Эмоциональный текст для сторис/блога. Магазинная вёрстка с буквицей и обложкой в&nbsp;превью.";
-    case "blog":
-      return "Длинный читательский формат с подзаголовком и SEO-полями. Расчёт времени чтения встроен.";
-    case "social":
-      return "Версии для Instagram / Telegram / VK с автоматической проверкой лимитов символов на платформу.";
-  }
-  return "";
 }

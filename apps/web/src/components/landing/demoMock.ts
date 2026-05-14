@@ -9,7 +9,12 @@
 //  Everything is shaped to match the real domain (channels, events,
 //  audiences, score ranges, reason chips). The "live AI" wow factor
 //  comes from the streaming animation in LandingDemo, not from real
-//  inference. This file is the script that animation reveals.
+//  inference.
+//
+//  i18n note: visible labels are stored as Tolgee key strings (suffix
+//  `*Key`). The component renders them via t() so RU/EN switch in place.
+//  Slug/score/numeric fields stay literal — they're not user-visible
+//  copy, they're domain identifiers.
 // =====================================================================
 
 import type { LucideIcon } from "lucide-react";
@@ -17,71 +22,71 @@ import { Carrot, Milk, FlaskConical, Leaf, Wheat } from "lucide-react";
 
 export interface MockFarmer {
   id: string;
-  name: string;
-  blurb: string;
-  category: string;
+  nameKey: string;
+  blurbKey: string;
+  categoryKey: string;
   skus: number;
-  badge: string;       // small chip on the card
+  badgeKey: string;
   tone: "leaf" | "amber" | "plum" | "sky" | "rust";
   icon: LucideIcon;
-  region: string;
+  regionKey: string;
 }
 
 export const MOCK_FARMERS: MockFarmer[] = [
   {
     id: "ogorod",
-    name: "Экоферма ОГО-РОД",
-    blurb: "Сезонные овощи, теплицы, открытый грунт",
-    category: "овощи",
+    nameKey: "demo.farmer.ogorod.name",
+    blurbKey: "demo.farmer.ogorod.blurb",
+    categoryKey: "demo.farmer.cat.vegetables",
     skus: 142,
-    badge: "премиум",
+    badgeKey: "demo.farmer.badge.premium",
     tone: "leaf",
     icon: Carrot,
-    region: "Подмосковье",
+    regionKey: "demo.farmer.region.moscowRegion",
   },
   {
     id: "dikiy-med",
-    name: "Пасека Дикий мёд",
-    blurb: "Луговой, гречишный, липовый. Бортевое пчеловодство",
-    category: "мёд",
+    nameKey: "demo.farmer.dikiyMed.name",
+    blurbKey: "demo.farmer.dikiyMed.blurb",
+    categoryKey: "demo.farmer.cat.honey",
     skus: 38,
-    badge: "органик",
+    badgeKey: "demo.farmer.badge.organic",
     tone: "amber",
     icon: FlaskConical,
-    region: "Башкортостан",
+    regionKey: "demo.farmer.region.bashkortostan",
   },
   {
     id: "dom-syra",
-    name: "Сыроварня Дом Сыра",
-    blurb: "Артизанальные сыры, выдержка от 30 дней",
-    category: "сыры",
+    nameKey: "demo.farmer.domSyra.name",
+    blurbKey: "demo.farmer.domSyra.blurb",
+    categoryKey: "demo.farmer.cat.cheese",
     skus: 24,
-    badge: "артизан",
+    badgeKey: "demo.farmer.badge.artisan",
     tone: "plum",
     icon: Milk,
-    region: "Тверская обл.",
+    regionKey: "demo.farmer.region.tver",
   },
   {
     id: "zelyonyi-klin",
-    name: "Зелёный Клин",
-    blurb: "Зелень, микрозелень, ростки. Гидропоника",
-    category: "зелень",
+    nameKey: "demo.farmer.zelyonyiKlin.name",
+    blurbKey: "demo.farmer.zelyonyiKlin.blurb",
+    categoryKey: "demo.farmer.cat.greens",
     skus: 67,
-    badge: "ЗОЖ",
+    badgeKey: "demo.farmer.badge.healthy",
     tone: "sky",
     icon: Leaf,
-    region: "Москва",
+    regionKey: "demo.farmer.region.moscow",
   },
   {
     id: "russkoe-pole",
-    name: "Русское Поле",
-    blurb: "Древние сорта пшеницы, спельта, полба, мука",
-    category: "зерно",
+    nameKey: "demo.farmer.russkoePole.name",
+    blurbKey: "demo.farmer.russkoePole.blurb",
+    categoryKey: "demo.farmer.cat.grain",
     skus: 19,
-    badge: "ремесло",
+    badgeKey: "demo.farmer.badge.craft",
     tone: "rust",
     icon: Wheat,
-    region: "Тула",
+    regionKey: "demo.farmer.region.tula",
   },
 ];
 
@@ -89,32 +94,32 @@ export const MOCK_FARMERS: MockFarmer[] = [
 
 export interface MockEvent {
   slug: string;
-  label: string;
+  labelKey: string;
   type: "праздник" | "православный" | "сезон" | "тренд" | "тематика";
-  date: string; // human, not parsed
+  dateKey: string;
   tone: "leaf" | "amber" | "plum" | "sky" | "rust";
 }
 
 export const MOCK_EVENTS: MockEvent[] = [
-  { slug: "easter",       label: "Пасха",           type: "православный", date: "12.04", tone: "amber" },
-  { slug: "med-spas",     label: "Медовый Спас",    type: "православный", date: "14.08", tone: "amber" },
-  { slug: "fermentation", label: "Ферментация",     type: "тренд",        date: "тренд осени", tone: "plum" },
-  { slug: "zozh-week",    label: "Неделя ЗОЖ",      type: "тематика",     date: "01.09–07.09", tone: "leaf" },
-  { slug: "harvest",      label: "Осенний урожай",  type: "сезон",        date: "сен–окт", tone: "rust" },
-  { slug: "gift-season",  label: "Подарочный сезон", type: "сезон",       date: "дек–янв", tone: "plum" },
+  { slug: "easter",       labelKey: "demo.event.easter",       type: "православный", dateKey: "demo.event.date.easter",       tone: "amber" },
+  { slug: "med-spas",     labelKey: "demo.event.medSpas",      type: "православный", dateKey: "demo.event.date.medSpas",      tone: "amber" },
+  { slug: "fermentation", labelKey: "demo.event.fermentation", type: "тренд",        dateKey: "demo.event.date.fermentation", tone: "plum" },
+  { slug: "zozh-week",    labelKey: "demo.event.zozhWeek",     type: "тематика",     dateKey: "demo.event.date.zozhWeek",     tone: "leaf" },
+  { slug: "harvest",      labelKey: "demo.event.harvest",      type: "сезон",        dateKey: "demo.event.date.harvest",      tone: "rust" },
+  { slug: "gift-season",  labelKey: "demo.event.giftSeason",   type: "сезон",        dateKey: "demo.event.date.giftSeason",   tone: "plum" },
 ];
 
 export const MOCK_AUDIENCES = [
-  { slug: "zozh",        label: "ЗОЖ" },
-  { slug: "parents",     label: "Родители" },
-  { slug: "gourmets",    label: "Гурманы" },
-  { slug: "gift_buyers", label: "Подарки" },
+  { slug: "zozh",        labelKey: "demo.audience.zozh" },
+  { slug: "parents",     labelKey: "demo.audience.parents" },
+  { slug: "gourmets",    labelKey: "demo.audience.gourmets" },
+  { slug: "gift_buyers", labelKey: "demo.audience.giftBuyers" },
 ] as const;
 
 // ─── streaming-stage script ───────────────────────────────────────────
-// Each line renders as one row in the terminal-style "AI thinking" panel.
-// `ms` is how long that line "takes" — sum gives total animation length.
-// `out` is the trailing checkmark text shown after the line completes.
+// Stream lines render as terminal commands. The cmd text is intentionally
+// English/code-like ("analyze_catalog(...)") so it reads as system output
+// in either UI language; only the trailing free-text status is localized.
 
 export interface StreamStage {
   cmd: string;
@@ -123,23 +128,23 @@ export interface StreamStage {
 }
 
 export const STREAM_STAGES: StreamStage[] = [
-  { cmd: "analyze_catalog(skus, categories, tags)",  ms: 320,  out: "132ms · 8 категорий, 412 тегов" },
-  { cmd: "match_events(farmer.region, season)",      ms: 280,  out: "84ms · 14 кандидатов" },
+  { cmd: "analyze_catalog(skus, categories, tags)",  ms: 320,  out: "132ms · 8 cats, 412 tags" },
+  { cmd: "match_events(farmer.region, season)",      ms: 280,  out: "84ms · 14 candidates" },
   { cmd: "embed_query(audience, trend) · gemini-001", ms: 520, out: "280ms · 768-d vector" },
-  { cmd: "knn_search(top_k=12, dist=COSINE)",        ms: 240,  out: "41ms · из 412 SKU" },
+  { cmd: "knn_search(top_k=12, dist=COSINE)",        ms: 240,  out: "41ms · of 412 SKU" },
   { cmd: "score_with_memory(ai_memory=158 signals)", ms: 320,  out: "92ms · boost +0.34" },
   { cmd: "generate_content(push, story, blog)",      ms: 720,  out: "1.84s · gemini-2.5-flash" },
   { cmd: "build_plan(kanban, roi_engine)",           ms: 220,  out: "38ms · 3 cards, ROI +37%" },
 ];
 
-// ─── output deck (what reveals after streaming completes) ─────────────
+// ─── output deck ──────────────────────────────────────────────────────
 
 export interface MockRecommendation {
-  title: string;
-  event: string;
-  audience: string;
-  reasons: string[];      // chip labels
-  confidence: number;     // 0..1
+  titleKey: string;
+  eventKey: string;
+  audienceKey: string;
+  reasons: string[];      // chip labels — kept literal (they're system tokens)
+  confidence: number;
   delta_orders: number;
   delta_revenue_rub: number;
   tone: "leaf" | "amber" | "plum" | "sky";
@@ -147,9 +152,9 @@ export interface MockRecommendation {
 
 export const MOCK_RECS: MockRecommendation[] = [
   {
-    title: "Корзина «Медовый Спас» — мёд × орехи × ягода",
-    event: "Медовый Спас",
-    audience: "Гурманы + Подарки",
+    titleKey: "demo.rec.honeyBasket.title",
+    eventKey: "demo.rec.honeyBasket.event",
+    audienceKey: "demo.rec.honeyBasket.audience",
     reasons: ["tag:honey", "season:summer-end", "trend:+18%", "mem:0.84"],
     confidence: 0.92,
     delta_orders: 142,
@@ -157,9 +162,9 @@ export const MOCK_RECS: MockRecommendation[] = [
     tone: "amber",
   },
   {
-    title: "Ферментация недели — капуста, морковь, имбирь",
-    event: "Тренд: ферментация",
-    audience: "ЗОЖ",
+    titleKey: "demo.rec.fermentation.title",
+    eventKey: "demo.rec.fermentation.event",
+    audienceKey: "demo.rec.fermentation.audience",
     reasons: ["tag:fermented", "cat:vegetables", "trend:+24%"],
     confidence: 0.81,
     delta_orders: 96,
@@ -167,9 +172,9 @@ export const MOCK_RECS: MockRecommendation[] = [
     tone: "plum",
   },
   {
-    title: "Утренний ритуал — творожные сырники с мёдом",
-    event: "Recipe drop",
-    audience: "Родители",
+    titleKey: "demo.rec.morningRitual.title",
+    eventKey: "demo.rec.morningRitual.event",
+    audienceKey: "demo.rec.morningRitual.audience",
     reasons: ["recipe-bundle", "cross-farmer", "mem:0.71"],
     confidence: 0.76,
     delta_orders: 78,
@@ -177,9 +182,9 @@ export const MOCK_RECS: MockRecommendation[] = [
     tone: "leaf",
   },
   {
-    title: "Подписка на сезон — еженедельная коробка",
-    event: "Subscription nudge",
-    audience: "Постоянные · ЗОЖ",
+    titleKey: "demo.rec.subscription.title",
+    eventKey: "demo.rec.subscription.event",
+    audienceKey: "demo.rec.subscription.audience",
     reasons: ["repeat-cadence:14d", "ai_memory:0.68"],
     confidence: 0.69,
     delta_orders: 54,
@@ -188,55 +193,37 @@ export const MOCK_RECS: MockRecommendation[] = [
   },
 ];
 
-// ─── content drafts revealed in the demo ──────────────────────────────
+// ─── content drafts ───────────────────────────────────────────────────
 
 export interface MockContentDraft {
   channel: "push" | "story" | "blog" | "social";
-  title: string;
-  body: string;
+  titleKey: string;
+  bodyKey: string;
 }
 
 export const MOCK_CONTENT: MockContentDraft[] = [
-  {
-    channel: "push",
-    title: "🍯 Свежий мёд приехал!",
-    body: "Партия лугового мёда уже в магазине. Подписчикам — скидка 15% до пятницы.",
-  },
-  {
-    channel: "story",
-    title: "История одной банки",
-    body: "С весны мы ездили по семи пасекам Башкортостана. Эта банка — со старого луга у деревни Аркаулово. Никакого сахара, только дикое разнотравье.",
-  },
-  {
-    channel: "blog",
-    title: "Как выбрать честный мёд: 5 признаков",
-    body: "1. Кристаллизация — это не порок. 2. Цвет зависит от трав. 3. Лаборатория важнее, чем «дед сам качал». 4. Цена ниже 600₽/кг — повод задуматься. 5. Спросите про сезон сбора.",
-  },
-  {
-    channel: "social",
-    title: "Утро · Спас · Чай с мёдом",
-    body: "Спас. Самое время заварить чай и проверить три банки разного цвета на свет. Какой ваш?",
-  },
+  { channel: "push",   titleKey: "demo.content.push.title",   bodyKey: "demo.content.push.body" },
+  { channel: "story",  titleKey: "demo.content.story.title",  bodyKey: "demo.content.story.body" },
+  { channel: "blog",   titleKey: "demo.content.blog.title",   bodyKey: "demo.content.blog.body" },
+  { channel: "social", titleKey: "demo.content.social.title", bodyKey: "demo.content.social.body" },
 ];
 
 // ─── kanban preview ───────────────────────────────────────────────────
 
 export interface MockPlanCard {
   column: "proposed" | "planned" | "live";
-  title: string;
-  due: string;          // human label like "через 4 дня"
-  channels: string[];   // chip labels
+  titleKey: string;
+  dueKey: string;
+  channels: string[];
   tone: "leaf" | "amber" | "plum";
 }
 
 export const MOCK_KANBAN: MockPlanCard[] = [
-  { column: "live",      title: "Корзина Спаса · push + story",  due: "сегодня",   channels: ["push", "story"],          tone: "amber" },
-  { column: "planned",   title: "Ферментация · блог + recipe",   due: "через 2 д.", channels: ["blog", "recipe"],         tone: "plum" },
-  { column: "proposed",  title: "Подписка на сезон · email",     due: "через 5 д.", channels: ["social", "push"],         tone: "leaf" },
+  { column: "live",     titleKey: "demo.kanban.live.title",     dueKey: "demo.kanban.live.due",     channels: ["push", "story"],  tone: "amber" },
+  { column: "planned",  titleKey: "demo.kanban.planned.title",  dueKey: "demo.kanban.planned.due",  channels: ["blog", "recipe"], tone: "plum"  },
+  { column: "proposed", titleKey: "demo.kanban.proposed.title", dueKey: "demo.kanban.proposed.due", channels: ["social", "push"], tone: "leaf"  },
 ];
 
-// Total streaming duration helper — lets the parent know when to flip
-// from "thinking" to "reveal".
 export function totalStreamMs(stages: StreamStage[] = STREAM_STAGES): number {
   return stages.reduce((s, x) => s + x.ms, 0);
 }

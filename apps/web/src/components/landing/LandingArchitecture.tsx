@@ -1,7 +1,8 @@
 import { useId } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { useTranslate } from "@tolgee/react";
 import {
-  Brain, Cpu, Database, Globe, Layers, Network, Tags, Workflow,
+  Brain, Cpu, Database, Globe, Network, Tags, Workflow,
 } from "lucide-react";
 
 // =====================================================================
@@ -22,20 +23,20 @@ interface NodeSpec {
   id: string;
   x: number;          // % from left
   y: number;          // % from top
-  label: string;
-  sub: string;
+  labelKey: string;
+  subKey: string;
   Icon: typeof Brain;
   tone: "leaf" | "amber" | "plum" | "sky" | "rust";
-  stats: string[];    // tiny terminal-style readout
+  stats: string[];    // tiny terminal-style readout — kept literal (system tokens)
 }
 
 const NODES: NodeSpec[] = [
-  { id: "fe",  x: 8,  y: 28, label: "Frontend",         sub: "React · Vite · TS",     Icon: Globe,    tone: "sky",   stats: ["SSE-ready", "shadcn/ui", "Framer Motion"] },
-  { id: "api", x: 36, y: 28, label: "API",              sub: "Go · Gin",              Icon: Cpu,      tone: "leaf",  stats: ["zerolog", "REST + SSE", "JWT-less auth"] },
-  { id: "db",  x: 70, y: 16, label: "SurrealDB",        sub: "граф + векторы",        Icon: Database, tone: "amber", stats: ["3 491 SKU", "11 edge types", "HNSW · 768-d"] },
-  { id: "ai",  x: 70, y: 64, label: "Gemini",           sub: "LLM + embed",           Icon: Brain,    tone: "plum",  stats: ["2.5 Flash", "embedding-001", "out_dim=768"] },
-  { id: "rec", x: 36, y: 84, label: "Recommender",      sub: "4-уровневый скоринг",   Icon: Workflow, tone: "rust",  stats: ["tag · cat · KNN · mem", "ai_memory · 158 сигн.", "ROI engine"] },
-  { id: "tag", x: 8,  y: 64, label: "Tagging + embed",  sub: "pipelines",             Icon: Tags,     tone: "sky",   stats: ["bulk · upsert", "auto-canonical", "delta-only"] },
+  { id: "fe",  x: 8,  y: 28, labelKey: "arch.node.fe.label",  subKey: "arch.node.fe.sub",  Icon: Globe,    tone: "sky",   stats: ["SSE-ready", "shadcn/ui", "Framer Motion"] },
+  { id: "api", x: 36, y: 28, labelKey: "arch.node.api.label", subKey: "arch.node.api.sub", Icon: Cpu,      tone: "leaf",  stats: ["zerolog", "REST + SSE", "JWT-less auth"] },
+  { id: "db",  x: 70, y: 16, labelKey: "arch.node.db.label",  subKey: "arch.node.db.sub",  Icon: Database, tone: "amber", stats: ["3 491 SKU", "11 edge types", "HNSW · 768-d"] },
+  { id: "ai",  x: 70, y: 64, labelKey: "arch.node.ai.label",  subKey: "arch.node.ai.sub",  Icon: Brain,    tone: "plum",  stats: ["2.5 Flash", "embedding-001", "out_dim=768"] },
+  { id: "rec", x: 36, y: 84, labelKey: "arch.node.rec.label", subKey: "arch.node.rec.sub", Icon: Workflow, tone: "rust",  stats: ["tag · cat · KNN · mem", "ai_memory · 158 sig.", "ROI engine"] },
+  { id: "tag", x: 8,  y: 64, labelKey: "arch.node.tag.label", subKey: "arch.node.tag.sub", Icon: Tags,     tone: "sky",   stats: ["bulk · upsert", "auto-canonical", "delta-only"] },
 ];
 
 // Adjacency: tuples of [from, to] node ids. Each becomes a curve.
@@ -53,6 +54,7 @@ const EDGES: [string, string, string][] = [
 export function LandingArchitecture() {
   const reduce = useReducedMotion();
   const gradId = useId();
+  const { t } = useTranslate();
 
   return (
     <section id="architecture" className="relative mx-auto max-w-7xl px-6 py-24">
@@ -69,17 +71,14 @@ export function LandingArchitecture() {
       <header className="mb-12 max-w-3xl">
         <span className="smallcaps text-[11px] text-amber">
           <Network className="mr-1 inline h-3 w-3" />
-          под капотом
+          {t("arch.eyebrow")}
         </span>
         <h2 className="mt-2 font-display text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
-          Как устроена система<br />
-          <span className="gradient-text italic">— один кадр</span>
+          {t("arch.title.line1")}<br />
+          <span className="gradient-text italic">{t("arch.title.line2")}</span>
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-ink-dim">
-          Никаких чёрных ящиков. Каждый сигнал, проходящий от фермера до ответа ИИ,
-          можно пройти руками: пайплайны эмбеддингов и тегов, граф SurrealDB,
-          движок рекомендаций, генерация контента. Шесть узлов, восемь рёбер,
-          ноль магии.
+          {t("arch.subtitle")}
         </p>
       </header>
 
@@ -167,14 +166,14 @@ export function LandingArchitecture() {
 
         {/* corner telemetry block — adds AI-OS feel */}
         <div className="absolute right-5 top-5 rounded-lg border border-line/60 bg-bg/70 px-3 py-2 font-mono text-[10px] leading-relaxed text-ink-mute backdrop-blur">
-          <div className="text-leaf">● svoe-rodnoe.runtime</div>
-          <div>nodes 6 · edges 8</div>
-          <div>uptime 99.94%</div>
+          <div className="text-leaf">{t("arch.runtime.line1")}</div>
+          <div>{t("arch.runtime.line2")}</div>
+          <div>{t("arch.runtime.line3")}</div>
         </div>
         <div className="absolute bottom-5 left-5 rounded-lg border border-line/60 bg-bg/70 px-3 py-2 font-mono text-[10px] leading-relaxed text-ink-mute backdrop-blur">
-          <div className="text-amber">▲ now serving</div>
-          <div>65 ферм · 40 событий · 12 окон</div>
-          <div>last embed&nbsp;run · 4&nbsp;мин назад</div>
+          <div className="text-amber">{t("arch.live.line1")}</div>
+          <div>{t("arch.live.line2")}</div>
+          <div>{t("arch.live.line3")}</div>
         </div>
       </div>
 
@@ -189,18 +188,18 @@ export function LandingArchitecture() {
       <div className="mt-10 grid gap-4 md:grid-cols-3">
         <Pipeline
           tone="leaf"
-          label="Embedding pipeline"
-          line="SKU · событие → canonical text → Gemini embed → SurrealDB HNSW"
+          label={t("arch.pipeline.embed.label")}
+          line={t("arch.pipeline.embed.line")}
         />
         <Pipeline
           tone="amber"
-          label="Tagging pipeline"
-          line="SKU → rules + Gemini → product_tag → `fits` edges"
+          label={t("arch.pipeline.tag.label")}
+          line={t("arch.pipeline.tag.line")}
         />
         <Pipeline
           tone="plum"
-          label="Real-time planning"
-          line="user · контекст → recommend() → draft content → plan_card"
+          label={t("arch.pipeline.planning.label")}
+          line={t("arch.pipeline.planning.line")}
         />
       </div>
     </section>
@@ -211,6 +210,7 @@ export function LandingArchitecture() {
 
 function NodeCard({ node, stacked = false }: { node: NodeSpec; stacked?: boolean }) {
   const { Icon } = node;
+  const { t } = useTranslate();
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
@@ -259,8 +259,8 @@ function NodeCard({ node, stacked = false }: { node: NodeSpec; stacked?: boolean
           />
         </span>
       </div>
-      <div className="text-sm font-semibold text-ink">{node.label}</div>
-      <div className="text-[11px] text-ink-mute">{node.sub}</div>
+      <div className="text-sm font-semibold text-ink">{t(node.labelKey)}</div>
+      <div className="text-[11px] text-ink-mute">{t(node.subKey)}</div>
       <ul className="mt-2 space-y-0.5 font-mono text-[10px] text-ink-dim">
         {node.stats.map((s) => (
           <li key={s} className="flex items-center gap-1">

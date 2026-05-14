@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useTranslate } from "@tolgee/react";
 import { MessageCircleQuestion, Minus, Plus } from "lucide-react";
 
 // =====================================================================
@@ -11,71 +12,23 @@ import { MessageCircleQuestion, Minus, Plus } from "lucide-react";
 // =====================================================================
 
 interface QA {
-  q: string;
-  a: string;
+  qKey: string;
+  aKey: string;
   tone: "leaf" | "amber" | "plum" | "sky" | "rust";
 }
 
 const QAS: QA[] = [
-  {
-    q: "Как ИИ выбирает рекомендации?",
-    a:
-      "Четырёхслойный pipeline: пересечение тегов SKU и события → fallback по категории → " +
-      "KNN по эмбеддингам (768-d, COSINE) → boost от ai-памяти (что фермер раньше принимал). " +
-      "Никакой магии — каждое решение объясняется четырьмя числами, и их видно прямо в карточке.",
-    tone: "leaf",
-  },
-  {
-    q: "Что с приватностью данных?",
-    a:
-      "Каталоги SKU не покидают вашу инстанцию. Gemini получает только канонизированный текст " +
-      "(«яблочный мёд 250 г, луговая пасека Подмосковье»), без цен, остатков и имён покупателей. " +
-      "SurrealDB живёт на вашем сервере, эмбеддинги хранятся локально.",
-    tone: "amber",
-  },
-  {
-    q: "Откуда события и тренды?",
-    a:
-      "40+ событий курируются вручную: государственные, православные, сезонные, тематические. " +
-      "Тренды подтягиваются из YAML-сидов и расширяются без рестарта. У каждого события есть " +
-      "окно подготовки, целевые каналы и силы влияния на рекомендатор.",
-    tone: "plum",
-  },
-  {
-    q: "Можно ли редактировать AI-планы?",
-    a:
-      "Каждый AI-черновик — это draft. Редактируйте текст вручную, сохраняйте как новую версию " +
-      "(история ревизий встроена), публикуйте или архивируйте. ИИ — стартовая точка, не финал. " +
-      "Команда всегда остаётся в курсе через журнал активности на каждой карточке плана.",
-    tone: "sky",
-  },
-  {
-    q: "Как генерация соцсетей, блогов и историй работает?",
-    a:
-      "Один контентный движок, пять каналов с собственными промптами и формами тела: stories, " +
-      "blogs, recipes, social, push. Каждый со своим редактором и предпросмотром — магазинная " +
-      "вёрстка для блога, IG-tile с каруселью, lock-screen для push.",
-    tone: "rust",
-  },
-  {
-    q: "Как рекомендации адаптируются сезонно?",
-    a:
-      "12 сезонных окон и 5 трендов хранятся в графе как влияющие рёбра (`influences`, `covers`). " +
-      "При построении календаря рекомендатель смотрит активные окна и применяет boost к подходящим " +
-      "событиям. Сезон закончился — boost снят, без ручных правок.",
-    tone: "leaf",
-  },
-  {
-    q: "Подходит ли это маленьким фермам и локальным рынкам?",
-    a:
-      "Да, и это первичный кейс. Маленькому фермеру с 24 SKU система даёт то, на что у крупных " +
-      "брендов уходит целый отдел: календарь, контент, каналы, ROI. Архитектурно — multi-tenant; " +
-      "локально — один docker-compose up и сервис в эфире.",
-    tone: "amber",
-  },
+  { qKey: "faq.q1.q", aKey: "faq.q1.a", tone: "leaf" },
+  { qKey: "faq.q2.q", aKey: "faq.q2.a", tone: "amber" },
+  { qKey: "faq.q3.q", aKey: "faq.q3.a", tone: "plum" },
+  { qKey: "faq.q4.q", aKey: "faq.q4.a", tone: "sky" },
+  { qKey: "faq.q5.q", aKey: "faq.q5.a", tone: "rust" },
+  { qKey: "faq.q6.q", aKey: "faq.q6.a", tone: "leaf" },
+  { qKey: "faq.q7.q", aKey: "faq.q7.a", tone: "amber" },
 ];
 
 export function LandingFAQ() {
+  const { t } = useTranslate();
   const [open, setOpen] = useState<number | null>(0);
 
   return (
@@ -83,11 +36,11 @@ export function LandingFAQ() {
       <header className="mb-10 text-center">
         <span className="smallcaps text-[11px] text-plum">
           <MessageCircleQuestion className="mr-1 inline h-3 w-3" />
-          частые вопросы
+          {t("faq.eyebrow")}
         </span>
         <h2 className="mx-auto mt-2 max-w-2xl font-display text-4xl font-semibold leading-[1.05] tracking-tight md:text-5xl">
-          Семь&nbsp;вопросов, которые мы слышим<br />
-          <span className="gradient-text italic">— и&nbsp;прямые ответы</span>
+          {t("faq.title.line1")}<br />
+          <span className="gradient-text italic">{t("faq.title.line2")}</span>
         </h2>
       </header>
 
@@ -96,7 +49,7 @@ export function LandingFAQ() {
           const isOpen = open === i;
           return (
             <motion.li
-              key={qa.q}
+              key={qa.qKey}
               initial={{ opacity: 0, y: 6 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-10%" }}
@@ -124,7 +77,7 @@ export function LandingFAQ() {
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <span className="flex-1 font-display text-lg font-semibold leading-snug text-ink">
-                  {qa.q}
+                  {t(qa.qKey)}
                 </span>
                 <motion.span
                   initial={false}
@@ -151,7 +104,7 @@ export function LandingFAQ() {
                         className="mb-3 h-px w-12"
                         style={{ background: `hsl(var(--${qa.tone}))` }}
                       />
-                      {qa.a}
+                      {t(qa.aKey)}
                     </div>
                   </motion.div>
                 )}
@@ -162,14 +115,14 @@ export function LandingFAQ() {
       </ul>
 
       <p className="mt-10 text-center text-xs text-ink-mute">
-        Ещё вопрос?{" "}
+        {t("faq.contact")}{" "}
         <a
           href="mailto:hello@svoe-rodnoe.local"
           className="text-leaf underline-offset-4 hover:underline"
         >
-          напишите команде
+          {t("faq.contact.link")}
         </a>{" "}
-        — отвечаем в течение дня.
+        {t("faq.contact.suffix")}
       </p>
     </section>
   );

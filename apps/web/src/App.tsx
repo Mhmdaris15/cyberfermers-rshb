@@ -25,12 +25,12 @@ export function App() {
   return (
     <Routes>
       {/* ── public ─────────────────────────────────────────────── */}
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/403" element={<Forbidden />} />
 
       {/* ── authenticated app (layout route) ───────────────────── */}
       <Route element={<RequireAuth><Outlet /></RequireAuth>}>
-        <Route path="/" element={<Landing />} />
         <Route path="/farmers" element={<FarmersPage />} />
         <Route path="/farmer/:farmerId" element={<AppShell />}>
           <Route index element={<Navigate to="dashboard" replace />} />
