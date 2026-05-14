@@ -84,11 +84,23 @@ func (r *Repo) CreateUser(username, passwordHash, role string, displayName *stri
 }
 
 // FindUserByUsername returns the full User row for login. Returns
-// ErrUserNotFound if the username does not exist.
+// ErrUserNotFound if the username does not exist OR if the row decodes
+// without an id (defense in depth — `meta::id(id)` should always produce
+// one, but an empty id leaking into session creation would be worse than
+// a 401, so we treat it as "not found").
+//
+// `created_by` is `option<record<app_user>>` in the schema — i.e. it can
+// be NONE for the env-bootstrapped admin. SurrealDB's `meta::id()` aborts
+// the whole query when its argument is NONE, so the projection MUST be
+// wrapped in an `IF ... = NONE THEN NONE ELSE meta::id(...) END` guard.
+// (Same pattern applied throughout this file and the rest of the repo
+// layer — never call `meta::id()` on an `option<record<...>>` directly.)
 func (r *Repo) FindUserByUsername(username string) (*models.User, error) {
 	username = strings.ToLower(strings.TrimSpace(username))
 	res, err := r.c.Query(
-		`SELECT *, meta::id(id) AS id, meta::id(created_by) AS created_by
+		`SELECT *,
+		    meta::id(id) AS id,
+		    IF created_by = NONE THEN NONE ELSE meta::id(created_by) END AS created_by
 		   FROM app_user WHERE username = $u LIMIT 1;`,
 		map[string]any{"u": username},
 	)
@@ -97,19 +109,22 @@ func (r *Repo) FindUserByUsername(username string) (*models.User, error) {
 	}
 	var rows []models.User
 	_ = decodeQueryRows(res, &rows)
-	if len(rows) == 0 {
+	if len(rows) == 0 || rows[0].ID == "" {
 		return nil, ErrUserNotFound
 	}
 	return &rows[0], nil
 }
 
 // FindUserByID — same as FindUserByUsername but keyed by the bare record ID.
+// Same NONE-safe `meta::id(created_by)` guard applies.
 func (r *Repo) FindUserByID(id string) (*models.User, error) {
 	if id == "" {
 		return nil, ErrUserNotFound
 	}
 	res, err := r.c.Query(
-		`SELECT *, meta::id(id) AS id, meta::id(created_by) AS created_by
+		`SELECT *,
+		    meta::id(id) AS id,
+		    IF created_by = NONE THEN NONE ELSE meta::id(created_by) END AS created_by
 		   FROM type::thing("app_user", $id);`,
 		map[string]any{"id": id},
 	)
@@ -118,16 +133,19 @@ func (r *Repo) FindUserByID(id string) (*models.User, error) {
 	}
 	var rows []models.User
 	_ = decodeQueryRows(res, &rows)
-	if len(rows) == 0 {
+	if len(rows) == 0 || rows[0].ID == "" {
 		return nil, ErrUserNotFound
 	}
 	return &rows[0], nil
 }
 
 // ListUsers returns all users for the admin dashboard.
+// Same NONE-safe meta::id pattern as FindUserByUsername.
 func (r *Repo) ListUsers() ([]models.User, error) {
 	res, err := r.c.Query(
-		`SELECT *, meta::id(id) AS id, meta::id(created_by) AS created_by
+		`SELECT *,
+		    meta::id(id) AS id,
+		    IF created_by = NONE THEN NONE ELSE meta::id(created_by) END AS created_by
 		   FROM app_user ORDER BY created_at DESC;`,
 		nil,
 	)
@@ -152,7 +170,9 @@ func (r *Repo) UpdateUser(id string, patch map[string]any) (*models.User, error)
 
 	res, err := r.c.Query(
 		`UPDATE type::thing("app_user", $id) MERGE $patch
-		   RETURN *, meta::id(id) AS id, meta::id(created_by) AS created_by;`,
+		   RETURN *,
+		     meta::id(id) AS id,
+		     IF created_by = NONE THEN NONE ELSE meta::id(created_by) END AS created_by;`,
 		map[string]any{"id": id, "patch": patch},
 	)
 	if err != nil {

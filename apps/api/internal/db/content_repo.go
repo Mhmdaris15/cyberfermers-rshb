@@ -200,7 +200,7 @@ func (r *Repo) ListContentRevisions(contentID string) ([]models.ContentRevision,
 	    meta::id(content)    AS content_id,
 	    revision_number, body, model, prompt_version,
 	    is_user_edited, note, created_at,
-	    meta::id(author)     AS author_id,
+	    IF author = NONE THEN NONE ELSE meta::id(author) END AS author_id,
 	    author.username      AS author_username
 	  FROM content_revision
 	  WHERE content = type::thing("generated_content", $id)

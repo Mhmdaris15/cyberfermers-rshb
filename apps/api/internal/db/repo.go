@@ -754,8 +754,8 @@ func (r *Repo) ListPlanByFarmer(farmerID, boardType string) ([]models.PlanCard, 
 	    board_type, title, description, priority, due_date,
 	    audience_tags, channels, hashtags, cta, attachments,
 	    array::map(product_refs, |$p| meta::id($p)) AS product_refs,
-	    meta::id(assignee) AS assignee_id,
-	    meta::id(created_by) AS created_by,
+	    IF assignee  = NONE THEN NONE ELSE meta::id(assignee)  END AS assignee_id,
+	    IF created_by = NONE THEN NONE ELSE meta::id(created_by) END AS created_by,
 	    updated_at
 	  FROM plan_card WHERE farmer = $f`
 	vars := map[string]any{"f": full}

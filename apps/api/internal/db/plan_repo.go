@@ -67,8 +67,8 @@ func (r *Repo) GetPlanCard(id string) (*models.PlanCard, error) {
 	    board_type, title, description, priority, due_date,
 	    audience_tags, channels, hashtags, cta, attachments,
 	    array::map(product_refs, |$p| meta::id($p)) AS product_refs,
-	    meta::id(assignee) AS assignee_id,
-	    meta::id(created_by) AS created_by,
+	    IF assignee  = NONE THEN NONE ELSE meta::id(assignee)  END AS assignee_id,
+	    IF created_by = NONE THEN NONE ELSE meta::id(created_by) END AS created_by,
 	    updated_at
 	  FROM type::thing("plan_card", $id);`,
 		map[string]any{"id": id},
@@ -197,8 +197,8 @@ func (r *Repo) UpdatePlanCardFields(id string, patch map[string]any, authorID st
 	    board_type, title, description, priority, due_date,
 	    audience_tags, channels, hashtags, cta, attachments,
 	    array::map(product_refs, |$p| meta::id($p)) AS product_refs,
-	    meta::id(assignee) AS assignee_id,
-	    meta::id(created_by) AS created_by,
+	    IF assignee  = NONE THEN NONE ELSE meta::id(assignee)  END AS assignee_id,
+	    IF created_by = NONE THEN NONE ELSE meta::id(created_by) END AS created_by,
 	    updated_at
 	    FROM $cid)[0];`
 
@@ -292,7 +292,7 @@ func (r *Repo) AddPlanCardComment(cardID, authorID, body string) (*models.PlanCa
 	  RETURN (SELECT
 	    meta::id(id) AS id,
 	    meta::id(card) AS card_id,
-	    meta::id(author) AS author_id,
+	    IF author = NONE THEN NONE ELSE meta::id(author) END AS author_id,
 	    author.username AS author_username,
 	    body, created_at
 	    FROM $comment_id FETCH author)[0];`
@@ -320,7 +320,7 @@ func (r *Repo) ListPlanCardComments(cardID string) ([]models.PlanCardComment, er
 	  SELECT
 	    meta::id(id) AS id,
 	    meta::id(card) AS card_id,
-	    meta::id(author) AS author_id,
+	    IF author = NONE THEN NONE ELSE meta::id(author) END AS author_id,
 	    author.username AS author_username,
 	    body, created_at
 	  FROM plan_card_comment
@@ -373,7 +373,7 @@ func (r *Repo) ListPlanCardActivity(cardID string, limit int) ([]models.PlanCard
 	  SELECT
 	    meta::id(id) AS id,
 	    meta::id(card) AS card_id,
-	    meta::id(author) AS author_id,
+	    IF author = NONE THEN NONE ELSE meta::id(author) END AS author_id,
 	    author.username AS author_username,
 	    kind, payload, created_at
 	  FROM plan_card_activity

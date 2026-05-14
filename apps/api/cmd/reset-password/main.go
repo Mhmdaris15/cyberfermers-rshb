@@ -106,8 +106,14 @@ func main() {
 	log.Info().Msg("password hashed (bcrypt cost 12)")
 
 	existing, err := repo.FindUserByUsername(username)
+
+	// Treat "exists" as: no error AND we got a non-nil row with a real id.
+	// (FindUserByUsername already returns ErrUserNotFound on empty/missing,
+	// but defense in depth — never run UPDATE on a phantom record.)
+	exists := err == nil && existing != nil && existing.ID != ""
+
 	switch {
-	case err == nil:
+	case exists:
 		// UPDATE path — replace password, re-enable, optionally re-role,
 		// and revoke any still-valid sessions for that user.
 		patch := map[string]any{
@@ -137,8 +143,10 @@ func main() {
 			log.Info().Msg("active sessions revoked")
 		}
 
-	case errors.Is(err, db.ErrUserNotFound):
+	case err == nil || errors.Is(err, db.ErrUserNotFound):
 		// CREATE path — fresh user with the requested role (default admin).
+		// Note: err == nil here means the repo returned (nil, nil) or a row
+		// with empty id — both treated as "doesn't exist, create one".
 		id, err := repo.CreateUser(username, hash, *roleFlag, nil, nil)
 		if err != nil {
 			log.Fatal().Err(err).Msg("create user")

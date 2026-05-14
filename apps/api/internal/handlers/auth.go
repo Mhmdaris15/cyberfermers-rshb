@@ -54,24 +54,26 @@ func (d *Deps) Login(c *gin.Context) {
 	}
 
 	user, err := d.Repo.FindUserByUsername(username)
+	// "Not found" is a normal auth branch, not an exceptional condition.
+	// We treat three things as the same case:
+	//   1. Repo signalled ErrUserNotFound explicitly
+	//   2. Repo returned (nil, nil) — shouldn't happen but defense in depth
+	//   3. Repo returned a row with no id (e.g. a partial-schema state)
+	// All three map to 401 invalid_credentials. The dummy bcrypt verify
+	// burns the same wall-clock as a real one would so username
+	// enumeration via response-time analysis still doesn't leak signal.
+	notFound := errors.Is(err, db.ErrUserNotFound) || (err == nil && (user == nil || user.ID == ""))
+	if notFound {
+		auth.DummyVerify(req.Password)
+		d.loginLimiter.recordFailure(username)
+		loginError(c, http.StatusUnauthorized, "invalid_credentials", "Invalid username or password")
+		return
+	}
 	if err != nil {
-		if errors.Is(err, db.ErrUserNotFound) {
-			// Burn an equivalent bcrypt comparison to defeat username-
-			// enumeration timing attacks. The dummy hash is fixed-cost.
-			auth.DummyVerify(req.Password)
-			d.loginLimiter.recordFailure(username)
-			loginError(c, http.StatusUnauthorized, "invalid_credentials", "Invalid username or password")
-			return
-		}
 		log.Error().Err(err).Msg("login: user lookup failed")
-		// TODO(post-diagnosis): drop `detail` once we identify the root cause.
-		// Currently surfacing the upstream SurrealDB error in the response so
-		// the browser console shows what's actually broken without needing
-		// container log access.
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":  "internal server error",
-			"code":   "lookup_failed",
-			"detail": err.Error(),
+			"error": "internal server error",
+			"code":  "lookup_failed",
 		})
 		return
 	}
@@ -97,9 +99,8 @@ func (d *Deps) Login(c *gin.Context) {
 	if err != nil {
 		log.Error().Err(err).Msg("login: token generation failed")
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":  "internal server error",
-			"code":   "token_failed",
-			"detail": err.Error(),
+			"error": "internal server error",
+			"code":  "token_failed",
 		})
 		return
 	}
@@ -119,14 +120,24 @@ func (d *Deps) Login(c *gin.Context) {
 		uaPtr = &ua
 	}
 
+	// One more defensive check before session creation — empty user.ID
+	// would 500 in the repo with a confusing "missing record id" error.
+	// We treated the empty-id case as "not found" above, so reaching
+	// here with an empty id is a real bug — log loudly and fail closed.
+	if user.ID == "" {
+		log.Error().Str("username", username).Msg("login: user.ID empty after non-error lookup — bug")
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "internal server error",
+			"code":  "invalid_user_state",
+		})
+		return
+	}
+
 	if _, err := d.Repo.CreateSession(user.ID, hash, expiresAt, ipPtr, uaPtr); err != nil {
 		log.Error().Err(err).Msg("login: session create failed")
-		// Surface the actual SurrealDB error so we can diagnose without
-		// Coolify log access. Remove `detail` once the root cause is fixed.
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error":  "internal server error",
-			"code":   "session_failed",
-			"detail": err.Error(),
+			"error": "internal server error",
+			"code":  "session_failed",
 		})
 		return
 	}
