@@ -28,7 +28,13 @@ type Deps struct {
 }
 
 func Register(r *gin.Engine, d *Deps) {
-	r.GET("/health", func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) })
+	// Docker / Coolify healthchecks invoke `wget --spider`, which sends
+	// HEAD (not GET). Gin does not auto-mirror GET → HEAD, so we register
+	// the same handler against both methods. Without HEAD the container
+	// looks alive in logs but Docker marks it unhealthy.
+	healthHandler := func(c *gin.Context) { c.JSON(200, gin.H{"status": "ok"}) }
+	r.GET("/health", healthHandler)
+	r.HEAD("/health", healthHandler)
 
 	api := r.Group("/api")
 	{

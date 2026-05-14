@@ -22,9 +22,14 @@ type Deps struct {
 // Register wires all routes. /health is public; everything else sits
 // behind the InternalAuth middleware applied at the router level.
 func Register(r *gin.Engine, authMW gin.HandlerFunc, d *Deps) {
-	r.GET("/health", func(c *gin.Context) {
+	// Docker / Coolify healthchecks use `wget --spider`, which sends HEAD
+	// (not GET). Gin does not auto-mirror GET → HEAD, so we register both
+	// methods against the same handler. /health is unauthenticated.
+	healthHandler := func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	}
+	r.GET("/health", healthHandler)
+	r.HEAD("/health", healthHandler)
 
 	g := r.Group("/", authMW)
 	{
