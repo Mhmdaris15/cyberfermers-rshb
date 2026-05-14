@@ -135,6 +135,19 @@ export interface ContentRevision {
   created_at: string;
 }
 
+export type BoardType =
+  | "campaign"
+  | "seasonal"
+  | "social"
+  | "launch"
+  | "event"
+  | "recipe"
+  | "storytelling"
+  | "push"
+  | "community";
+
+export type CardPriority = "low" | "normal" | "high" | "urgent";
+
 export interface PlanCard {
   id?: string;
   farmer_id: string;
@@ -144,4 +157,56 @@ export interface PlanCard {
   note?: string;
   scheduled_for?: string;
   suggestion?: Suggestion;
+
+  // ── Phase-3 rich-card fields (all optional for compat) ───────
+  board_type?: BoardType;
+  title?: string;
+  description?: string;
+  priority?: CardPriority;
+  due_date?: string | null;
+  audience_tags?: string[];
+  channels?: string[];
+  hashtags?: string[];
+  cta?: string;
+  attachments?: unknown[];
+  product_refs?: string[];
+  assignee_id?: string | null;
+  created_by?: string | null;
+  updated_at?: string;
+  created_at?: string;
+}
+
+export interface PlanCardComment {
+  id: string;
+  card_id: string;
+  author_id?: string | null;
+  author_username?: string | null;
+  body: string;
+  created_at: string;
+}
+
+export type ActivityKind =
+  | "created"
+  | "moved"
+  | "edited"
+  | "commented"
+  | "archived"
+  | "linked_content_published";
+
+export interface PlanCardActivity {
+  id: string;
+  card_id: string;
+  author_id?: string | null;
+  author_username?: string | null;
+  kind: ActivityKind;
+  payload?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface BoardSummary {
+  board_type: BoardType;
+  total: number;
+  active: number;
+  completed: number;
+  overdue: number;
 }
