@@ -36,18 +36,29 @@ func main() {
 	defer dbc.Close()
 
 	if err := dbc.EnsureSchema(cfg.SchemaPath); err != nil {
-		log.Warn().Err(err).Msg("schema apply non-fatal")
+		// Log loudly but DO NOT exit. If a single DEFINE statement has bad
+		// syntax for this Surreal version, every statement after it silently
+		// doesn't apply. Killing the process here would leave the deployed
+		// stack in a crash-loop with no way to diagnose. Better: stay up,
+		// log the exact error, and let /health respond so callers can see
+		// the container is alive even if features are degraded.
+		log.Error().Err(err).Msg("schema apply FAILED — some tables/fields may be missing; the API will stay up so /health responds and the error is visible")
 	}
 
 	repo := db.NewRepo(dbc)
 
 	// Bootstrap first admin from env vars when the DB has no admin yet.
 	// On every subsequent boot this is a no-op (HasActiveAdmin gates it).
-	// Refusing to start when env vars are missing AND no admin exists
-	// prevents a deployed API with no way to log in.
+	//
+	// Failure is NON-FATAL by design: a broken bootstrap (e.g. app_user
+	// table missing because schema apply errored earlier) used to crash
+	// the container, putting it in a restart loop that hid the underlying
+	// schema problem under a CORS-headers-missing symptom in the browser.
+	// We now log the error loudly and continue so /health responds and the
+	// failure mode is debuggable.
 	switch res, err := auth.EnsureFirstAdmin(repo, cfg.AdminUsername, cfg.AdminPassword); {
 	case err != nil:
-		log.Fatal().Err(err).Msg("auth bootstrap failed — refusing to start")
+		log.Error().Err(err).Msg("auth bootstrap failed — login will not work until the underlying error is fixed, but the API will stay up so the failure is diagnosable")
 	case res == auth.BootstrapCreated:
 		log.Info().Str("username", strings.ToLower(strings.TrimSpace(cfg.AdminUsername))).
 			Msg("bootstrapped first admin from env")
