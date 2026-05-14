@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  BellRing,
   BookOpen,
   BookText,
   Calendar,
@@ -29,6 +30,7 @@ const items = [
   { to: "blogs", label: "Журнал", Icon: BookText },
   { to: "recipes", label: "Рецепты", Icon: ChefHat },
   { to: "social", label: "Соцсети", Icon: Share2 },
+  { to: "push", label: "Push", Icon: BellRing },
   { to: "products", label: "Каталог", Icon: Store },
   { to: "ai", label: "AI-ассистент", Icon: Sparkles },
   { to: "settings", label: "Настройки", Icon: Settings },

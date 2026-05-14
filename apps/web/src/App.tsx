@@ -12,6 +12,7 @@ import { StoriesPage } from "./pages/StoriesPage";
 import { BlogsPage } from "./pages/BlogsPage";
 import { RecipesPage } from "./pages/RecipesPage";
 import { SocialPage } from "./pages/SocialPage";
+import { PushPage } from "./pages/PushPage";
 import { Login } from "./pages/Login";
 import { Forbidden } from "./pages/Forbidden";
 import { AdminUsers } from "./pages/AdminUsers";
@@ -40,6 +41,7 @@ export function App() {
           <Route path="blogs" element={<BlogsPage />} />
           <Route path="recipes" element={<RecipesPage />} />
           <Route path="social" element={<SocialPage />} />
+          <Route path="push" element={<PushPage />} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="ai" element={<AiPage />} />
           <Route path="settings" element={<SettingsPage />} />

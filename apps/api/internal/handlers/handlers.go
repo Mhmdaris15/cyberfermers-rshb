@@ -134,6 +134,14 @@ func Register(r *gin.Engine, d *Deps) {
 		authed.POST("/farmers/:id/social-posts", d.CreateFarmerSocialPost)
 		authed.GET("/social-posts/:id", d.GetSocialPost)
 
+		// ── push notifications (phase-8) ───────────────────────────
+		// Spec: docs/superpowers/specs/2026-05-14-push-module-design.md
+		// Runtime scheduler in cmd/server/main.go ticks every 30s
+		// and dispatches due pushes via DispatchDuePushes().
+		authed.GET("/farmers/:id/push", d.ListFarmerPushes)
+		authed.POST("/farmers/:id/push", d.CreateFarmerPush)
+		authed.GET("/push/:id", d.GetPush)
+
 		// ── admin-only ───────────────────────────────────────────────
 		admin := authed.Group("/admin", middleware.RequireAdmin())
 		admin.GET("/users", d.ListUsers)

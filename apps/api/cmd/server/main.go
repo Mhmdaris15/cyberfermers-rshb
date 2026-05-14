@@ -79,6 +79,31 @@ func main() {
 		}
 	}()
 
+	// Push dispatcher (phase-8). Ticks every 30s and atomically flips
+	// queued pushes whose scheduled_for has passed to status=sent.
+	// In Phase 8 MVP this SIMULATES sending — log a line per dispatch
+	// and trust the operator to confirm via the FE. A real APN/FCM
+	// integration would replace the log call with a provider HTTP call
+	// and conditionalise the body.dispatch mutation on its success.
+	go func() {
+		t := time.NewTicker(30 * time.Second)
+		defer t.Stop()
+		for range t.C {
+			sent, err := repo.DispatchDuePushes()
+			if err != nil {
+				log.Warn().Err(err).Msg("push dispatch failed")
+				continue
+			}
+			for _, p := range sent {
+				log.Info().
+					Str("push_id", p.ID).
+					Str("farmer_id", p.FarmerID).
+					Str("headline", p.Headline).
+					Msg("push: dispatched (simulated)")
+			}
+		}
+	}()
+
 	aiClient := ai.NewClient(cfg.GeminiKey, cfg.GeminiModel, cfg.GeminiEmbed)
 	contentSvc := ai.NewContentService(aiClient)
 	reco := recommendation.New(repo)
