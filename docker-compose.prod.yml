@@ -83,6 +83,13 @@ services:
     # svoe-net only — web (same-origin reverse-proxy) reaches us here, and
     # Coolify wires its own proxy onto this container at deploy time.
     networks: [svoe-net]
+    # Tell Traefik the API speaks on 8080. Without this label Traefik
+    # defaults its loadbalancer to :80 (no listener on this container)
+    # and every request times out as 504 even when the container is
+    # healthy and reachable over Docker DNS. Coolify's auto-injected
+    # router for this service's domain will reuse this service.
+    labels:
+      - "traefik.http.services.api.loadbalancer.server.port=8080"
     healthcheck:
       test:
         - CMD
