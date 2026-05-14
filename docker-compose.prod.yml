@@ -93,42 +93,42 @@ services:
         max-size: "10m"
         max-file: "5"
 
-  devops:
-    # Internal-only DevOps operator. Wraps a whitelisted subset of the
-    # Coolify v4 API so AI agents can trigger deploys / fetch logs /
-    # restart apps without docker / shell access.
-    # See apps/devops/README.md for the full threat model.
-    build:
-      context: .
-      dockerfile: ./apps/devops/Dockerfile
-    container_name: svoe-devops-prod
-    restart: unless-stopped
-    env_file: .env.devops
-    environment:
-      # Pin port server-side so platform env injection can't move it.
-      DEVOPS_PORT: "9090"
-      # Bind 0.0.0.0 inside the container so siblings on svoe-net can reach
-      # it; the container itself is never published to the host.
-      DEVOPS_BIND_ADDR: "0.0.0.0"
-    expose:
-      - "9090"            # intra-network ONLY; do NOT publish to the host
-    networks: [svoe-net]
-    healthcheck:
-      test:
-        - CMD
-        - wget
-        - --quiet
-        - --spider
-        - http://localhost:9090/health
-      interval: 15s
-      timeout: 3s
-      retries: 3
-      start_period: 10s
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
+  # devops:
+  #   # Internal-only DevOps operator. Wraps a whitelisted subset of the
+  #   # Coolify v4 API so AI agents can trigger deploys / fetch logs /
+  #   # restart apps without docker / shell access.
+  #   # See apps/devops/README.md for the full threat model.
+  #   build:
+  #     context: .
+  #     dockerfile: ./apps/devops/Dockerfile
+  #   container_name: svoe-devops-prod
+  #   restart: unless-stopped
+  #   env_file: .env.devops
+  #   environment:
+  #     # Pin port server-side so platform env injection can't move it.
+  #     DEVOPS_PORT: "9090"
+  #     # Bind 0.0.0.0 inside the container so siblings on svoe-net can reach
+  #     # it; the container itself is never published to the host.
+  #     DEVOPS_BIND_ADDR: "0.0.0.0"
+  #   expose:
+  #     - "9090"            # intra-network ONLY; do NOT publish to the host
+  #   networks: [svoe-net]
+  #   healthcheck:
+  #     test:
+  #       - CMD
+  #       - wget
+  #       - --quiet
+  #       - --spider
+  #       - http://localhost:9090/health
+  #     interval: 15s
+  #     timeout: 3s
+  #     retries: 3
+  #     start_period: 10s
+  #   logging:
+  #     driver: json-file
+  #     options:
+  #       max-size: "10m"
+  #       max-file: "3"
 
   web:
     build:
