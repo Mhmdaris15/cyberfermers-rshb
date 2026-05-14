@@ -81,6 +81,16 @@ func Register(r *gin.Engine, d *Deps) {
 		authed.POST("/plan/cards", d.AddPlanCard)
 		authed.POST("/plan/cards/move", d.MovePlanCard)
 
+		// ── phase-3 multi-board kanban ─────────────────────────────
+		// Spec: docs/superpowers/specs/2026-05-14-multi-board-kanban-design.md
+		authed.GET("/farmers/:id/plan/boards", d.ListBoards)
+		authed.GET("/plan/cards/:id", d.GetPlanCard)
+		authed.PATCH("/plan/cards/:id", d.UpdatePlanCard)
+		authed.DELETE("/plan/cards/:id", d.DeletePlanCard)
+		authed.GET("/plan/cards/:id/comments", d.ListPlanCardComments)
+		authed.POST("/plan/cards/:id/comments", d.AddPlanCardComment)
+		authed.GET("/plan/cards/:id/activity", d.ListPlanCardActivity)
+
 		// ── content lifecycle (phase-2) ────────────────────────────
 		// Spec: docs/superpowers/specs/2026-05-14-content-versioning-design.md
 		authed.GET("/content/:id", d.GetContent)
@@ -306,7 +316,9 @@ func (d *Deps) ListContent(c *gin.Context) {
 // ----- plan -------------------------------------------------------------
 
 func (d *Deps) GetPlan(c *gin.Context) {
-	board, err := d.Plan.Board(c.Param("id"))
+	// ?board=<type> filters to a single board (campaign/seasonal/social/...).
+	// Empty = all boards (the default for legacy dashboard consumers).
+	board, err := d.Plan.Board(c.Param("id"), c.Query("board"))
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
@@ -355,6 +367,18 @@ type addCardReq struct {
 	Suggestion *models.Suggestion `json:"suggestion"`
 	Column     string             `json:"column"`
 	Note       string             `json:"note"`
+
+	// Phase-3 rich-card fields — all optional. Callers (FE today, future
+	// integrations tomorrow) can set any subset; defaults fill the rest.
+	BoardType    string     `json:"board_type,omitempty"`
+	Title        string     `json:"title,omitempty"`
+	Description  string     `json:"description,omitempty"`
+	Priority     string     `json:"priority,omitempty"`
+	DueDate      *time.Time `json:"due_date,omitempty"`
+	AudienceTags []string   `json:"audience_tags,omitempty"`
+	Channels     []string   `json:"channels,omitempty"`
+	Hashtags     []string   `json:"hashtags,omitempty"`
+	CTA          string     `json:"cta,omitempty"`
 }
 
 func (d *Deps) AddPlanCard(c *gin.Context) {
@@ -368,20 +392,34 @@ func (d *Deps) AddPlanCard(c *gin.Context) {
 		return
 	}
 	req.Suggestion.FarmerID = req.FarmerID
-	card, err := d.Plan.AddCard(req.FarmerID, req.Suggestion, defaultS(req.Column, "planned"), req.Note)
+	card := &models.PlanCard{
+		Column:       defaultS(req.Column, "planned"),
+		Note:         req.Note,
+		BoardType:    defaultS(req.BoardType, models.BoardCampaign),
+		Title:        req.Title,
+		Description:  req.Description,
+		Priority:     defaultS(req.Priority, models.PriorityNormal),
+		DueDate:      req.DueDate,
+		AudienceTags: req.AudienceTags,
+		Channels:     req.Channels,
+		Hashtags:     req.Hashtags,
+		CTA:          req.CTA,
+	}
+	created, err := d.Plan.AddCard(req.FarmerID, callerID(c), req.Suggestion, card)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return
 	}
-	c.JSON(201, card)
+	c.JSON(201, created)
 }
 
 type moveCardReq struct {
-	CardID   string `json:"card_id"`
-	FarmerID string `json:"farmer_id"`
-	SuggestionID string `json:"suggestion_id"`
-	Column   string `json:"column"`
-	Position int    `json:"position"`
+	CardID         string `json:"card_id"`
+	FarmerID       string `json:"farmer_id"`
+	SuggestionID   string `json:"suggestion_id"`
+	Column         string `json:"column"`
+	Position       int    `json:"position"`
+	PreviousColumn string `json:"previous_column,omitempty"`
 }
 
 func (d *Deps) MovePlanCard(c *gin.Context) {
@@ -393,7 +431,7 @@ func (d *Deps) MovePlanCard(c *gin.Context) {
 	err := d.Plan.Move(&models.PlanCard{
 		ID: req.CardID, FarmerID: req.FarmerID, SuggestionID: req.SuggestionID,
 		Column: req.Column, Position: req.Position,
-	})
+	}, callerID(c), req.PreviousColumn)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return

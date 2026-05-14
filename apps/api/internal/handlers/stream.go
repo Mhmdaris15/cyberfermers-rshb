@@ -76,7 +76,7 @@ func (d *Deps) Stream(c *gin.Context) {
 			return
 		case <-tick.C:
 			// --- plan board diff ---
-			if board, err := d.Plan.Board(farmerID); err == nil {
+			if board, err := d.Plan.Board(farmerID, ""); err == nil {
 				if b, _ := json.Marshal(board); !equalBytes(b, lastPlan) {
 					lastPlan = b
 					if !emit("plan", json.RawMessage(b)) {

@@ -280,16 +280,95 @@ type Insight struct {
 	Evidence map[string]any `json:"evidence"` // raw counters for the FE / debugging
 }
 
+// Board-type values. Mirrors the SurrealDB ASSERT on plan_card.board_type.
+// Each value represents one of the nine operational pipelines exposed in
+// the FE board switcher.
+const (
+	BoardCampaign     = "campaign"
+	BoardSeasonal     = "seasonal"
+	BoardSocial       = "social"
+	BoardLaunch       = "launch"
+	BoardEvent        = "event"
+	BoardRecipe       = "recipe"
+	BoardStorytelling = "storytelling"
+	BoardPush         = "push"
+	BoardCommunity    = "community"
+)
+
+// AllBoardTypes is the canonical ordering used by /plan/boards and the FE
+// switcher. Keep in sync with the SurrealDB ASSERT.
+var AllBoardTypes = []string{
+	BoardCampaign, BoardSeasonal, BoardSocial, BoardLaunch, BoardEvent,
+	BoardRecipe, BoardStorytelling, BoardPush, BoardCommunity,
+}
+
+// Priority values. Mirrors the SurrealDB ASSERT.
+const (
+	PriorityLow    = "low"
+	PriorityNormal = "normal"
+	PriorityHigh   = "high"
+	PriorityUrgent = "urgent"
+)
+
 type PlanCard struct {
-	ID            string     `json:"id"`
-	FarmerID      string     `json:"farmer_id"`
-	SuggestionID  string     `json:"suggestion_id"`
+	ID            string      `json:"id"`
+	FarmerID      string      `json:"farmer_id"`
+	SuggestionID  string      `json:"suggestion_id"`
 	Suggestion    *Suggestion `json:"suggestion,omitempty"`
-	Column        string     `json:"column"`
-	Position      int        `json:"position"`
-	Note          string     `json:"note,omitempty"`
-	ScheduledFor  *time.Time `json:"scheduled_for,omitempty"`
-	LaunchedAt    *time.Time `json:"launched_at,omitempty"`
-	ResultOrders  *int       `json:"result_orders,omitempty"`
-	ResultRevenue *float64   `json:"result_revenue,omitempty"`
+	Column        string      `json:"column"`
+	Position      int         `json:"position"`
+	Note          string      `json:"note,omitempty"`
+	ScheduledFor  *time.Time  `json:"scheduled_for,omitempty"`
+	LaunchedAt    *time.Time  `json:"launched_at,omitempty"`
+	ResultOrders  *int        `json:"result_orders,omitempty"`
+	ResultRevenue *float64    `json:"result_revenue,omitempty"`
+	CreatedAt     time.Time   `json:"created_at,omitempty"`
+
+	// ── Phase-3 rich-card fields ──────────────────────────────
+	BoardType     string     `json:"board_type"`
+	Title         string     `json:"title,omitempty"`
+	Description   string     `json:"description,omitempty"`
+	Priority      string     `json:"priority"`
+	DueDate       *time.Time `json:"due_date,omitempty"`
+	AudienceTags  []string   `json:"audience_tags,omitempty"`
+	Channels      []string   `json:"channels,omitempty"`
+	Hashtags      []string   `json:"hashtags,omitempty"`
+	CTA           string     `json:"cta,omitempty"`
+	Attachments   []any      `json:"attachments,omitempty"`
+	ProductRefs   []string   `json:"product_refs,omitempty"` // bare product record ids
+	AssigneeID    *string    `json:"assignee_id,omitempty"`
+	CreatedBy     *string    `json:"created_by,omitempty"`
+	UpdatedAt     time.Time  `json:"updated_at,omitempty"`
+}
+
+// PlanCardComment is a single user-authored comment on a card.
+type PlanCardComment struct {
+	ID             string    `json:"id"`
+	CardID         string    `json:"card_id"`
+	AuthorID       *string   `json:"author_id,omitempty"`
+	AuthorUsername *string   `json:"author_username,omitempty"`
+	Body           string    `json:"body"`
+	CreatedAt      time.Time `json:"created_at"`
+}
+
+// PlanCardActivity is a single audit-log entry for a card. kind values:
+//   created | moved | edited | commented | archived | linked_content_published
+type PlanCardActivity struct {
+	ID             string         `json:"id"`
+	CardID         string         `json:"card_id"`
+	AuthorID       *string        `json:"author_id,omitempty"`
+	AuthorUsername *string        `json:"author_username,omitempty"`
+	Kind           string         `json:"kind"`
+	Payload        map[string]any `json:"payload,omitempty"`
+	CreatedAt      time.Time      `json:"created_at"`
+}
+
+// BoardSummary is one entry returned by GET /api/farmers/:id/plan/boards.
+// Drives the FE board switcher (icon + label + counts per board type).
+type BoardSummary struct {
+	BoardType string `json:"board_type"`
+	Total     int    `json:"total"`
+	Active    int    `json:"active"`    // anything not yet completed
+	Completed int    `json:"completed"`
+	Overdue   int    `json:"overdue"`   // due_date < now() && column != 'completed'
 }

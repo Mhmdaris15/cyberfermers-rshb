@@ -219,7 +219,59 @@ DEFINE FIELD launched_at         ON plan_card TYPE option<datetime>;
 DEFINE FIELD result_orders       ON plan_card TYPE option<int>;
 DEFINE FIELD result_revenue      ON plan_card TYPE option<float>;
 DEFINE FIELD created_at          ON plan_card TYPE datetime DEFAULT time::now();
+-- Phase-3 additions: multi-board + rich card. All additive — existing
+-- rows get defaults at next read. Spec: docs/superpowers/specs/2026-05-14-multi-board-kanban-design.md
+DEFINE FIELD board_type          ON plan_card TYPE string
+                                  ASSERT $value IN [
+                                    'campaign','seasonal','social','launch','event',
+                                    'recipe','storytelling','push','community'
+                                  ]
+                                  DEFAULT 'campaign';
+DEFINE FIELD title               ON plan_card TYPE option<string>;
+DEFINE FIELD description         ON plan_card TYPE option<string>;
+DEFINE FIELD priority            ON plan_card TYPE string
+                                  ASSERT $value IN ['low','normal','high','urgent']
+                                  DEFAULT 'normal';
+DEFINE FIELD due_date            ON plan_card TYPE option<datetime>;
+DEFINE FIELD audience_tags       ON plan_card TYPE array<string> DEFAULT [];
+DEFINE FIELD channels            ON plan_card TYPE array<string> DEFAULT [];
+DEFINE FIELD hashtags            ON plan_card TYPE array<string> DEFAULT [];
+DEFINE FIELD cta                 ON plan_card TYPE option<string>;
+DEFINE FIELD attachments         ON plan_card FLEXIBLE TYPE array DEFAULT [];
+DEFINE FIELD product_refs        ON plan_card TYPE array<record<product>> DEFAULT [];
+DEFINE FIELD assignee            ON plan_card TYPE option<record<app_user>>;
+DEFINE FIELD created_by          ON plan_card TYPE option<record<app_user>>;
+DEFINE FIELD updated_at          ON plan_card TYPE datetime DEFAULT time::now();
 DEFINE INDEX idx_pc_farmer       ON plan_card COLUMNS farmer, column;
+DEFINE INDEX idx_pc_board        ON plan_card COLUMNS farmer, board_type;
+DEFINE INDEX idx_pc_due          ON plan_card COLUMNS due_date;
+DEFINE INDEX idx_pc_assignee     ON plan_card COLUMNS assignee;
+
+-- ── plan_card_comment (collaboration) ────────────────────────
+-- Append-only user prose attached to a card. Display newest-first.
+-- author=NONE never happens (POST requires auth) but the field is
+-- nullable for the same reason as content_revision — a deleted user
+-- shouldn't orphan their comments.
+DEFINE TABLE plan_card_comment SCHEMAFULL;
+DEFINE FIELD card        ON plan_card_comment TYPE record<plan_card>;
+DEFINE FIELD author      ON plan_card_comment TYPE option<record<app_user>>;
+DEFINE FIELD body        ON plan_card_comment TYPE string ASSERT string::len($value) > 0;
+DEFINE FIELD created_at  ON plan_card_comment TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_comment_card ON plan_card_comment COLUMNS card, created_at;
+
+-- ── plan_card_activity (audit timeline) ──────────────────────
+-- System-emitted events: created/moved/edited/commented/archived/
+-- linked_content_published. Repo methods write these atomically with
+-- the action that triggered them — handlers never call AppendActivity
+-- directly. payload is FLEXIBLE so each kind can carry its own shape
+-- (`moved` → {from,to}, `edited` → {fields:[...]}, etc.).
+DEFINE TABLE plan_card_activity SCHEMAFULL;
+DEFINE FIELD card        ON plan_card_activity TYPE record<plan_card>;
+DEFINE FIELD author      ON plan_card_activity TYPE option<record<app_user>>;
+DEFINE FIELD kind        ON plan_card_activity TYPE string;
+DEFINE FIELD payload     ON plan_card_activity FLEXIBLE TYPE option<object>;
+DEFINE FIELD created_at  ON plan_card_activity TYPE datetime DEFAULT time::now();
+DEFINE INDEX idx_activity_card ON plan_card_activity COLUMNS card, created_at;
 
 -- ── ai_memory  (NEW) ────────────────────────────────────────
 -- Every farmer interaction with the recommender is stored here.

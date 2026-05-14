@@ -232,7 +232,7 @@ func toolPlanStatus() Tool {
 			},
 		},
 		Run: func(ctx ToolCtx, _ map[string]any) (map[string]any, error) {
-			cards, err := ctx.Repo.ListPlanByFarmer(ctx.FarmerID)
+			cards, err := ctx.Repo.ListPlanByFarmer(ctx.FarmerID, "")
 			if err != nil {
 				return nil, err
 			}

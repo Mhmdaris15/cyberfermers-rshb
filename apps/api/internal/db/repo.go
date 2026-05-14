@@ -673,6 +673,12 @@ func (r *Repo) ListGeneratedForSuggestion(suggestionID string) ([]models.Generat
 
 // ----- plan_card --------------------------------------------------------
 
+// UpsertPlanCard creates or updates the plan_card matching the suggestion.
+// On UPDATE it merges only the legacy fields (column/position/note/scheduled_for) —
+// rich-card fields (board_type/title/description/priority/etc.) are written
+// via UpdatePlanCardFields (see plan_repo.go). This keeps the move/AddCard
+// hot path identical to its pre-Phase-3 behavior; rich edits go through a
+// separate, audit-emitting path.
 func (r *Repo) UpsertPlanCard(card *models.PlanCard) (string, error) {
 	farmer, err := r.ResolveFarmer(card.FarmerID)
 	if err != nil {
@@ -683,13 +689,19 @@ func (r *Repo) UpsertPlanCard(card *models.PlanCard) (string, error) {
 	  LET $row = (SELECT id FROM plan_card WHERE suggestion = $s LIMIT 1);
 	  IF array::len($row) > 0 {
 	    UPDATE $row[0].id MERGE {
-	      column: $col, position: $pos, note: $note, scheduled_for: $sched
+	      column: $col, position: $pos, note: $note, scheduled_for: $sched,
+	      updated_at: time::now()
 	    };
 	    RETURN meta::id($row[0].id);
 	  } ELSE {
 	    LET $created = (CREATE plan_card SET
 	      farmer = $f, suggestion = $s, column = $col, position = $pos,
-	      note = $note, scheduled_for = $sched
+	      note = $note, scheduled_for = $sched,
+	      board_type = $board, title = $title, description = $desc,
+	      priority = $prio, due_date = $due,
+	      audience_tags = $audtags, channels = $chans, hashtags = $tags,
+	      cta = $cta,
+	      created_by = IF $cb = NONE THEN NONE ELSE type::thing("app_user", $cb) END
 	    );
 	    RETURN meta::id($created[0].id);
 	  }`,
@@ -699,6 +711,16 @@ func (r *Repo) UpsertPlanCard(card *models.PlanCard) (string, error) {
 			"pos":   card.Position,
 			"note":  card.Note,
 			"sched": card.ScheduledFor,
+			"board": defaultString(card.BoardType, models.BoardCampaign),
+			"title": optionalString(&card.Title),
+			"desc":  optionalString(&card.Description),
+			"prio":  defaultString(card.Priority, models.PriorityNormal),
+			"due":   card.DueDate,
+			"audtags": defaultStrings(card.AudienceTags, nil),
+			"chans":   defaultStrings(card.Channels, nil),
+			"tags":    defaultStrings(card.Hashtags, nil),
+			"cta":     optionalString(&card.CTA),
+			"cb":      optionalString(card.CreatedBy),
 		})
 	if err != nil {
 		return "", err
@@ -711,24 +733,38 @@ func (r *Repo) UpsertPlanCard(card *models.PlanCard) (string, error) {
 // ListPlanByFarmer returns plan cards WITHOUT hydrating the nested suggestion.
 // Use plan.Service.Board() if you need cards with their Suggestion+Event populated.
 //
+// `boardType` filters to a single board when non-empty; pass "" to get all
+// cards across all boards (current default for the dashboard view).
+//
 // Why explicit fields? `SELECT *` would emit raw record-id strings for the
 // `farmer` and `suggestion` columns. Those collide with our struct's
 // `Suggestion *Suggestion` field (tagged "suggestion") and cause a decode error.
-func (r *Repo) ListPlanByFarmer(farmerID string) ([]models.PlanCard, error) {
+func (r *Repo) ListPlanByFarmer(farmerID, boardType string) ([]models.PlanCard, error) {
 	full, err := r.ResolveFarmer(farmerID)
 	if err != nil {
 		return nil, err
 	}
-	res, err := r.c.Query(`
+	q := `
 	  SELECT
 	    meta::id(id) AS id,
 	    meta::id(farmer) AS farmer_id,
 	    meta::id(suggestion) AS suggestion_id,
 	    column AS column, position, note, scheduled_for,
-	    launched_at, result_orders, result_revenue
-	  FROM plan_card WHERE farmer = $f
-	  ORDER BY column, position;`,
-		map[string]any{"f": full})
+	    launched_at, result_orders, result_revenue, created_at,
+	    board_type, title, description, priority, due_date,
+	    audience_tags, channels, hashtags, cta, attachments,
+	    array::map(product_refs, |$p| meta::id($p)) AS product_refs,
+	    meta::id(assignee) AS assignee_id,
+	    meta::id(created_by) AS created_by,
+	    updated_at
+	  FROM plan_card WHERE farmer = $f`
+	vars := map[string]any{"f": full}
+	if boardType != "" {
+		q += ` AND board_type = $b`
+		vars["b"] = boardType
+	}
+	q += ` ORDER BY column, position;`
+	res, err := r.c.Query(q, vars)
 	if err != nil {
 		return nil, err
 	}
