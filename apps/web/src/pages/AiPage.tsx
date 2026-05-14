@@ -1,5 +1,6 @@
+import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import {
   ArrowUpRight,
@@ -8,31 +9,92 @@ import {
   Gift,
   Layers3,
   Megaphone,
+  MessageSquare,
   RefreshCw,
   Sparkles,
   Workflow,
 } from "lucide-react";
 
-import { getFarmerProducts, getInsights, listEvents, type Insight } from "@/lib/api";
-import { useMemo } from "react";
+import { chatTurn, getFarmerProducts, getInsights, listEvents, type Insight } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/utils";
 import { CategoryHeatmap } from "@/components/charts/CategoryHeatmap";
 
-// =================================================================
-//  AI Insights — proactive intelligence. The page used to explain the
-//  AI pipeline architecture; now it surfaces *recommendations*: where
-//  the catalog is under-leveraged, what events are about to open,
-//  which channels are missing, which categories convert best.
+import {
+  clearSession, loadSession, saveAs, saveSession,
+  type SlashCommand, type WorkspaceMessage,
+} from "@/lib/ai-workspace";
+import { StarterRail } from "@/components/ai-workspace/StarterRail";
+import { Conversation } from "@/components/ai-workspace/Conversation";
+import { Composer } from "@/components/ai-workspace/Composer";
+
+// =====================================================================
+//  AiPage — tabbed shell.
 //
-//  Every card is computed by the Go insights engine; no LLM in the
-//  loop. The FE merely renders + adds an icon per kind.
-// =================================================================
+//    ┌── Tabs ──────────────────────────────┐
+//    │  Инсайты    Воркспейс                │
+//    └──────────────────────────────────────┘
+//    │                                       │
+//    │  InsightsTab   |   WorkspaceTab       │
+//    │  (existing)        (new — phase 9)    │
+//    └───────────────────────────────────────┘
+//
+//  The Insights tab is the entire pre-Phase-9 page logic, untouched.
+//  The Workspace tab is the new conversational surface that ties the
+//  five content modules together via the existing chat + per-module
+//  POST endpoints.
+// =====================================================================
+
 export function AiPage() {
+  return (
+    <div className="space-y-5">
+      <header className="border-b border-line pb-4">
+        <span className="smallcaps text-[11px] text-leaf">
+          <Sparkles className="inline h-3 w-3" /> AI · workspace
+        </span>
+        <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight md:text-4xl">
+          AI-ассистент
+        </h1>
+        <p className="mt-1 max-w-2xl text-sm text-ink-dim">
+          Слева — проактивные инсайты, посчитанные движком без LLM.
+          Справа — конверсационный воркспейс, где можно попросить ИИ
+          сгенерировать, объяснить, переписать&nbsp;— и&nbsp;превратить
+          любой ответ в&nbsp;черновик контента одним кликом.
+        </p>
+      </header>
+
+      <Tabs defaultValue="insights">
+        <TabsList>
+          <TabsTrigger value="insights">
+            <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+            Инсайты
+          </TabsTrigger>
+          <TabsTrigger value="workspace">
+            <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
+            Воркспейс
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="insights">
+          <InsightsTab />
+        </TabsContent>
+        <TabsContent value="workspace">
+          <WorkspaceTab />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+// ─── Insights tab (existing logic, lifted from the pre-Phase-9 page) ──
+
+function InsightsTab() {
   const { farmerId = "10060" } = useParams();
   const q = useQuery({
     queryKey: ["insights", farmerId],
@@ -50,9 +112,6 @@ export function AiPage() {
     },
     staleTime: 5 * 60_000,
   });
-  // We derive farmer categories from their own SKUs (the /api/farmers/:id
-  // endpoint doesn't include counts). Already cached if the user visited any
-  // page that uses this query.
   const productsQ = useQuery({
     queryKey: ["products", farmerId],
     queryFn: () => getFarmerProducts(farmerId),
@@ -69,26 +128,18 @@ export function AiPage() {
   }, [productsQ.data]);
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <span className="smallcaps text-[11px] text-leaf">
-            <Sparkles className="inline h-3 w-3" /> AI · proactive intelligence
-          </span>
-          <h1 className="mt-2 font-display text-3xl font-semibold tracking-tight md:text-4xl">
-            AI-ассистент уже всё посмотрел
-          </h1>
-          <p className="mt-1 max-w-2xl text-sm text-ink-dim">
-            Анализирует ваш каталог, теги, события маркетплейса и календарь
-            на 90 дней вперёд. Возвращает только сильные сигналы — ранжированы
-            по бизнес-влиянию.
-          </p>
-        </div>
+    <div className="space-y-6 pt-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="max-w-xl text-xs text-ink-mute">
+          Анализирует ваш каталог, теги, события маркетплейса и&nbsp;календарь
+          на&nbsp;90 дней вперёд. Возвращает только сильные сигналы —
+          ранжированы по&nbsp;бизнес-влиянию.
+        </p>
         <Button variant="secondary" size="sm" onClick={() => q.refetch()} disabled={q.isFetching}>
           <RefreshCw className={cn("h-4 w-4", q.isFetching && "animate-spin")} />
           Пересчитать
         </Button>
-      </header>
+      </div>
 
       {heatmapQ.isLoading || productsQ.isLoading ? (
         <Skeleton className="h-72 w-full rounded-2xl" />
@@ -118,6 +169,141 @@ export function AiPage() {
     </div>
   );
 }
+
+// ─── Workspace tab (new, Phase 9) ─────────────────────────────────────
+
+function WorkspaceTab() {
+  const { farmerId = "10060" } = useParams();
+  const toast = useToast();
+
+  // Session lives in React state, hydrated from localStorage. Saved
+  // every time the array changes so a refresh doesn't blow away the
+  // conversation — but the server holds no thread persistence yet.
+  const [messages, setMessages] = useState<WorkspaceMessage[]>(() => loadSession(farmerId));
+  const [injected, setInjected] = useState<string | undefined>(undefined);
+
+  const turn = useMutation({
+    mutationFn: (text: string) =>
+      chatTurn(farmerId, text, messages.map((m) => ({
+        role: m.role === "user" ? "user" : "assistant",
+        text: m.text,
+      }))),
+  });
+
+  function push(messagesNext: WorkspaceMessage[]) {
+    setMessages(messagesNext);
+    saveSession(farmerId, messagesNext);
+  }
+
+  async function send(text: string) {
+    if (!text.trim() || turn.isPending) return;
+    const next: WorkspaceMessage[] = [
+      ...messages,
+      { role: "user", text, ts: Date.now() },
+    ];
+    push(next);
+    try {
+      const reply = await turn.mutateAsync(text);
+      push([
+        ...next,
+        {
+          role: "assistant",
+          text: reply.text,
+          ts: Date.now(),
+          actions: reply.actions ?? [],
+          used: reply.used ?? [],
+        },
+      ]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "ошибка сети";
+      push([
+        ...next,
+        { role: "assistant", text: `Не удалось получить ответ: ${msg}`, ts: Date.now() },
+      ]);
+    }
+  }
+
+  async function regenerate() {
+    // Find the last user message and resend it. We drop the trailing
+    // assistant reply first so the regenerated one takes its place.
+    let lastUserIdx = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (messages[i].role === "user") { lastUserIdx = i; break; }
+    }
+    if (lastUserIdx < 0) return;
+    const trimmed = messages.slice(0, lastUserIdx + 1);
+    push(trimmed);
+    await send(messages[lastUserIdx].text);
+  }
+
+  async function onSlash(cmd: SlashCommand, arg: string) {
+    switch (cmd.kind) {
+      case "explain":
+        await send(arg.trim() ? `Объясни подробнее: ${arg}` : "Объясни, что у меня сейчас в плане");
+        return;
+      case "regen":
+        await regenerate();
+        return;
+      case "clear":
+        clearSession(farmerId);
+        setMessages([]);
+        return;
+      case "save-story":
+      case "save-blog":
+      case "save-recipe":
+      case "save-social":
+      case "save-push": {
+        const map = {
+          "save-story":  "story",
+          "save-blog":   "blog",
+          "save-recipe": "recipe",
+          "save-social": "social",
+          "save-push":   "push",
+        } as const;
+        const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+        if (!lastAssistant) {
+          toast.error("Нет ответа ИИ для сохранения");
+          return;
+        }
+        try {
+          const res = await saveAs(farmerId, map[cmd.kind], lastAssistant.text);
+          toast.success(`Сохранено: ${res.route}`);
+        } catch {
+          toast.error("Не удалось сохранить");
+        }
+        return;
+      }
+    }
+  }
+
+  return (
+    <div className="flex h-[calc(100vh-16rem)] min-h-[28rem] gap-4 overflow-hidden rounded-2xl border border-line bg-bg-elevated/30 pt-1">
+      <StarterRail
+        onPick={(prompt) => setInjected(prompt)}
+        disabled={turn.isPending}
+      />
+
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <Conversation
+          messages={messages}
+          farmerID={farmerId}
+          pending={turn.isPending}
+          onRegenerate={regenerate}
+          onSaved={(route, label) => toast.success(`${label} сохранён${label === "Push" ? "" : "а"} → ${route}`)}
+        />
+        <Composer
+          onSubmit={send}
+          onSlash={onSlash}
+          disabled={turn.isPending}
+          injected={injected}
+          onInjectedConsumed={() => setInjected(undefined)}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── existing insight card / score bar / kindMeta (unchanged) ─────────
 
 function InsightCard({ insight, index }: { insight: Insight; index: number }) {
   const meta = kindMeta(insight.kind);
@@ -189,7 +375,6 @@ function ScoreBar({ value, tone }: { value: number; tone: string }) {
   );
 }
 
-// per-kind icon + label + (optional) link to the relevant deeper page.
 function kindMeta(kind: string): { Icon: any; label: string; tone: Insight["tone"]; cta?: { label: string; href: string } } {
   switch (kind) {
     case "season_opening":
