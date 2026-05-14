@@ -9,10 +9,11 @@
 #    api        — Go binary, no host bind mounts
 #    web        — Vite static build behind nginx (proxies /api → api:8080)
 #
-#  The web container is the only thing that needs to be exposed to the
-#  internet. The API and DB stay on an internal Docker network. Put a
-#  reverse proxy (Caddy / Nginx / Cloudify-managed) in front of `web`
-#  to terminate TLS.
+#  No service publishes a host port. The platform's reverse proxy
+#  (Coolify Traefik / Cloudify-managed Caddy / external Nginx) is
+#  expected to attach to `svoe-net-prod` and route :80/:443 to the
+#  `web` container. To run this stack standalone (no platform proxy),
+#  re-add `ports: ["${WEB_PORT:-8080}:80"]` to the web service.
 # =====================================================================
 
 name: svoe-rodnoe-prod
@@ -93,42 +94,10 @@ services:
         max-size: "10m"
         max-file: "5"
 
-  # devops:
-  #   # Internal-only DevOps operator. Wraps a whitelisted subset of the
-  #   # Coolify v4 API so AI agents can trigger deploys / fetch logs /
-  #   # restart apps without docker / shell access.
-  #   # See apps/devops/README.md for the full threat model.
-  #   build:
-  #     context: .
-  #     dockerfile: ./apps/devops/Dockerfile
-  #   container_name: svoe-devops-prod
-  #   restart: unless-stopped
-  #   env_file: .env.devops
-  #   environment:
-  #     # Pin port server-side so platform env injection can't move it.
-  #     DEVOPS_PORT: "9090"
-  #     # Bind 0.0.0.0 inside the container so siblings on svoe-net can reach
-  #     # it; the container itself is never published to the host.
-  #     DEVOPS_BIND_ADDR: "0.0.0.0"
-  #   expose:
-  #     - "9090"            # intra-network ONLY; do NOT publish to the host
-  #   networks: [svoe-net]
-  #   healthcheck:
-  #     test:
-  #       - CMD
-  #       - wget
-  #       - --quiet
-  #       - --spider
-  #       - http://localhost:9090/health
-  #     interval: 15s
-  #     timeout: 3s
-  #     retries: 3
-  #     start_period: 10s
-  #   logging:
-  #     driver: json-file
-  #     options:
-  #       max-size: "10m"
-  #       max-file: "3"
+  # NOTE: The DevOps Operator (apps/devops/) is intentionally NOT included
+  # in this production compose. It is a separate concern with its own auth
+  # surface and threat model; deploy it independently via apps/devops/README.md
+  # so it doesn't run in the same trust boundary as the public-facing stack.
 
   web:
     build:
@@ -142,8 +111,14 @@ services:
         VITE_APP_NAME: ${PUBLIC_APP_NAME:-Свое Родное · Calendar}
     container_name: svoe-web-prod
     restart: unless-stopped
-    ports:
-      - "${WEB_PORT:-8080}:80"   # this is the ONLY internet-facing port
+    # No `ports:` binding — Coolify's Traefik proxy already owns host
+    # 80/443 and routes to this container via the Docker network. Use
+    # `expose:` so siblings on svoe-net can reach :80 without competing
+    # for a host port. If you deploy this stack OUTSIDE Coolify, you'll
+    # need to re-add `ports: ["${WEB_PORT:-8080}:80"]` or run your own
+    # reverse proxy in front.
+    expose:
+      - "80"
     depends_on:
       api:
         condition: service_healthy
