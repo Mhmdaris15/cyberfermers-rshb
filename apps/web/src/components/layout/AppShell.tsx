@@ -17,30 +17,35 @@ import {
   X,
   ArrowLeftRight,
 } from "lucide-react";
+import { useTranslate } from "@tolgee/react";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { getFarmer } from "@/lib/api";
 import { ChatLauncher, ChatSheet } from "@/components/chat/ChatSheet";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 
+// Nav items are static (icons + route slugs); the visible label is resolved
+// at render time so language switches re-render the labels in place.
 const items = [
-  { to: "dashboard", label: "Дашборд", Icon: LayoutDashboard },
-  { to: "calendar", label: "Календарь", Icon: Calendar },
-  { to: "plan", label: "План", Icon: ListChecks },
-  { to: "stories", label: "Истории", Icon: BookOpen },
-  { to: "blogs", label: "Журнал", Icon: BookText },
-  { to: "recipes", label: "Рецепты", Icon: ChefHat },
-  { to: "social", label: "Соцсети", Icon: Share2 },
-  { to: "push", label: "Push", Icon: BellRing },
-  { to: "products", label: "Каталог", Icon: Store },
-  { to: "ai", label: "AI-ассистент", Icon: Sparkles },
-  { to: "settings", label: "Настройки", Icon: Settings },
-];
+  { to: "dashboard", labelKey: "nav.dashboard", Icon: LayoutDashboard },
+  { to: "calendar",  labelKey: "nav.calendar",  Icon: Calendar },
+  { to: "plan",      labelKey: "nav.plan",      Icon: ListChecks },
+  { to: "stories",   labelKey: "nav.stories",   Icon: BookOpen },
+  { to: "blogs",     labelKey: "nav.blogs",     Icon: BookText },
+  { to: "recipes",   labelKey: "nav.recipes",   Icon: ChefHat },
+  { to: "social",    labelKey: "nav.social",    Icon: Share2 },
+  { to: "push",      labelKey: "nav.push",      Icon: BellRing },
+  { to: "products",  labelKey: "nav.products",  Icon: Store },
+  { to: "ai",        labelKey: "nav.ai",        Icon: Sparkles },
+  { to: "settings",  labelKey: "nav.settings",  Icon: Settings },
+] as const;
 
 export function AppShell() {
   const { farmerId = "10060" } = useParams();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const location = useLocation();
+  const { t } = useTranslate();
 
   // Close drawer on every route change.
   useEffect(() => setMobileOpen(false), [location.pathname]);
@@ -90,12 +95,12 @@ export function AppShell() {
             <button
               onClick={() => setMobileOpen(true)}
               className="grid h-9 w-9 place-items-center rounded-lg border border-line bg-bg-elevated text-ink lg:hidden"
-              aria-label="Открыть меню"
+              aria-label={t("nav.openMenu")}
             >
               <Menu className="h-4 w-4" />
             </button>
             <div className="flex flex-col leading-tight">
-              <div className="smallcaps text-[10px] text-ink-mute">Фермер</div>
+              <div className="smallcaps text-[10px] text-ink-mute">{t("nav.farmer.label")}</div>
               <div className="truncate text-sm font-semibold">
                 {farmer.data?.shop_name ?? `#${farmerId}`}
               </div>
@@ -105,13 +110,14 @@ export function AppShell() {
               className="ml-2 inline-flex items-center gap-1.5 rounded-md border border-line bg-bg-elevated/60 px-2.5 py-1.5 text-xs text-ink-dim transition hover:border-leaf/40 hover:text-leaf focus-ring"
             >
               <ArrowLeftRight className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Сменить фермера</span>
-              <span className="sm:hidden">Сменить</span>
+              <span className="hidden sm:inline">{t("nav.farmer.switch")}</span>
+              <span className="sm:hidden">{t("nav.farmer.switchShort")}</span>
             </Link>
           </div>
           <div className="flex items-center gap-2 text-xs text-ink-mute">
-            <span className="h-2 w-2 animate-pulse rounded-full bg-leaf" />
-            <span className="hidden sm:inline">API · live</span>
+            <LanguageSwitcher />
+            <span className="ml-1 h-2 w-2 animate-pulse rounded-full bg-leaf" />
+            <span className="hidden sm:inline">{t("common.status.apiLive")}</span>
           </div>
         </header>
 
@@ -152,6 +158,7 @@ function SidebarBody({
   onLinkClick?: () => void;
   variant: "desktop" | "mobile";
 }) {
+  const { t } = useTranslate();
   return (
     <>
       <div className="flex items-center justify-between gap-2 px-5 py-5">
@@ -160,16 +167,16 @@ function SidebarBody({
             <span className="font-display text-lg font-bold">С</span>
           </div>
           <div className="flex flex-col leading-tight">
-            <span className="font-display text-sm font-semibold tracking-tight">Свое Родное</span>
+            <span className="font-display text-sm font-semibold tracking-tight">{t("common.brand.name")}</span>
             <span className="text-[11px] uppercase tracking-widest text-ink-mute">
-              calendar · ai
+              {t("common.brand.tagline")}
             </span>
           </div>
         </div>
         {variant === "mobile" && (
           <button
             onClick={onLinkClick}
-            aria-label="Закрыть"
+            aria-label={t("common.cta.close")}
             className="text-ink-mute hover:text-ink"
           >
             <X className="h-4 w-4" />
@@ -177,7 +184,7 @@ function SidebarBody({
         )}
       </div>
       <nav className="flex flex-col gap-1 px-3">
-        {items.map(({ to, label, Icon }) => (
+        {items.map(({ to, labelKey, Icon }) => (
           <NavLink
             key={to}
             to={`/farmer/${farmerId}/${to}`}
@@ -201,7 +208,7 @@ function SidebarBody({
                   />
                 )}
                 <Icon className="h-4 w-4" />
-                <span>{label}</span>
+                <span>{t(labelKey)}</span>
               </>
             )}
           </NavLink>
@@ -211,9 +218,9 @@ function SidebarBody({
         <div className="glass rounded-xl p-3 text-xs text-ink-dim">
           <div className="mb-1 flex items-center gap-1 text-ink">
             <Sparkles className="h-3.5 w-3.5 text-amber" />
-            <span className="font-medium">Gemini подключён</span>
+            <span className="font-medium">{t("nav.geminiConnected")}</span>
           </div>
-          Структурный JSON-вывод. Любой канал — в один клик.
+          {t("nav.geminiBlurb")}
         </div>
       </div>
     </>

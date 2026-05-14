@@ -1,6 +1,7 @@
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import { Link } from "react-router-dom";
+import { useTranslate } from "@tolgee/react";
 import {
   ArrowRight,
   Sparkles,
@@ -14,6 +15,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { SeasonalityRing } from "@/components/calendar/SeasonalityRing";
 import { LandingDemo } from "@/components/landing/LandingDemo";
 import { LandingArchitecture } from "@/components/landing/LandingArchitecture";
@@ -26,6 +28,7 @@ import { LandingFAQ } from "@/components/landing/LandingFAQ";
 //  lifting on contrast; the rest is restraint.
 // =================================================================
 export function Landing() {
+  const { t } = useTranslate();
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -56,16 +59,17 @@ export function Landing() {
               <span className="font-display text-lg font-bold">С</span>
             </div>
             <div className="font-display text-sm font-semibold tracking-tight">
-              Свое&nbsp;Родное
+              {t("common.brand.name")}
               <span className="ml-2 text-ink-mute font-sans font-normal smallcaps text-[10px]">
-                calendar
+                {t("common.brand.short")}
               </span>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <Badge variant="leaf" className="hidden sm:inline-flex">
-              Хакатон РСХБ.Цифра · НИЯУ МИФИ
+              {t("landing.badge.hackathon")}
             </Badge>
+            <LanguageSwitcher />
           </div>
         </nav>
 
@@ -78,45 +82,42 @@ export function Landing() {
             className="flex flex-col gap-7"
           >
             <Badge variant="outline" className="w-fit border-leaf/40 text-leaf">
-              <Sparkles className="h-3.5 w-3.5" /> AI-маркетолог для фермера
+              <Sparkles className="h-3.5 w-3.5" /> {t("landing.badge.aiMarketer")}
             </Badge>
 
             {/* The hero headline: Fraunces variable axis at its most expressive. */}
             <h1 className="display-xl font-display text-[clamp(2.4rem,5.5vw,4.6rem)] font-semibold leading-[1.02] tracking-tight">
-              Календарь продаж,
+              {t("landing.hero.title.line1")}
               <br />
               <span className="gradient-text italic">
-                который сам пишет
+                {t("landing.hero.title.line2")}
               </span>
               <br />
-              <span className="ink-gradient">кампании.</span>
+              <span className="ink-gradient">{t("landing.hero.title.line3")}</span>
             </h1>
 
             <p className="max-w-xl text-base leading-relaxed text-ink-dim">
-              Анализируем ассортимент фермера, находим события&nbsp;— праздники,
-              сезоны, тематические недели&nbsp;— и собираем готовые
-              многоканальные кампании: пуш, сторис, блог, рецепт, чат повторным
-              покупателям. Прогноз&nbsp;ROI — на каждое предложение.
+              {t("landing.hero.body")}
             </p>
 
             <div className="flex flex-wrap items-center gap-3">
               <Button asChild size="lg">
                 <Link to="/farmers">
-                  Выбрать фермера <ArrowRight className="h-4 w-4" />
+                  {t("common.cta.pickFarmer")} <ArrowRight className="h-4 w-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="secondary">
                 <a href="#demo" rel="noreferrer">
-                  Попробовать демо
+                  {t("common.cta.tryDemo")}
                 </a>
               </Button>
             </div>
 
             <dl className="mt-2 flex flex-wrap items-baseline gap-x-8 gap-y-3 text-sm text-ink-mute">
-              <Stat label="SKU в каталоге" value="3 491" />
-              <Stat label="Фермеров" value="65" />
-              <Stat label="Событий в KB" value="40+" />
-              <Stat label="Каналов кампании" value="6" />
+              <Stat label={t("landing.stats.skus")} value="3 491" />
+              <Stat label={t("landing.stats.farmers")} value="65" />
+              <Stat label={t("landing.stats.events")} value="40+" />
+              <Stat label={t("landing.stats.channels")} value="6" />
             </dl>
           </motion.div>
 

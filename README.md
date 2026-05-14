@@ -163,6 +163,64 @@ make clean          wipe Surreal volume
 
 ---
 
+## Internationalization (i18n)
+
+The web app is wired for **Tolgee** with two supported locales: Russian (default) and English. Architecture supports adding more languages with no code changes — only translation files.
+
+### How it works
+
+- **Static bundles, zero runtime cost.** Locale files live at `apps/web/src/locales/{lang}.json` and are bundled at build time. No network call on first paint, no flash of untranslated content.
+- **In-context editing in dev only.** If `VITE_TOLGEE_API_URL` + `VITE_TOLGEE_API_KEY` are set in dev, Tolgee's developer tools activate — alt-click any string in the browser to edit translations live against your Tolgee project. In production these env vars stay unset and the build is offline.
+- **Language detection on first visit:** explicit localStorage (`svoe.lang`) → `navigator.language` prefix → fallback `ru`.
+- **Persistence:** selected language stored in localStorage + cookie + `<html lang>` attribute.
+
+### Switching language
+
+The `<LanguageSwitcher />` component is mounted in:
+
+- App shell topbar (auth'd app)
+- Landing page nav
+- Login form (compact variant)
+
+### Adding a new translation key
+
+1. Open both `apps/web/src/locales/ru.json` and `apps/web/src/locales/en.json`.
+2. Add the same key in both files, using the namespaced dot notation:
+   ```json
+   "dashboard.metrics.sales": "..."
+   ```
+3. In the React code, use `useTranslate()`:
+   ```tsx
+   const { t } = useTranslate();
+   <h2>{t("dashboard.metrics.sales")}</h2>
+   ```
+
+Namespaces in use: `common.*`, `nav.*`, `landing.*`, `auth.*`, `errors.*`, `lang.*`. Use the same convention (`module.section.key`) for new strings.
+
+### Adding a new language
+
+1. Create `apps/web/src/locales/<code>.json` with the same keys as the existing files.
+2. In `apps/web/src/lib/i18n.ts`, append the code to `SUPPORTED_LANGS` and import the JSON into `staticData`.
+3. Update `SHORT` and `lang.<code>` entries in the locale JSONs + `LanguageSwitcher.tsx`.
+
+### Connecting Tolgee Cloud later
+
+1. Create a project at https://app.tolgee.io (or self-hosted).
+2. Import the existing `apps/web/src/locales/{ru,en}.json` into it.
+3. Generate a dev API key.
+4. Set `VITE_TOLGEE_API_URL` + `VITE_TOLGEE_API_KEY` in your local `.env`. The Tolgee dev tools light up automatically. Production builds without those env vars continue to use the static bundle.
+
+### AI-generated content language
+
+The axios client (`apps/web/src/lib/api.ts`) injects two headers on every request:
+
+- `X-UI-Language` — the user's selected locale (`ru` or `en`)
+- `Accept-Language` — same value, for HTTP-spec compatibility
+
+The Go backend can read `X-UI-Language` on routes that build Gemini prompts (`/api/suggestions/:id/generate`, `/api/farmers/:id/chat`, etc.) and pin the output language accordingly. UI translations stay in Tolgee; only AI-generated bodies follow this header.
+
+---
+
 ## License
 
 MIT. Built for the hackathon, but designed to outlive it.

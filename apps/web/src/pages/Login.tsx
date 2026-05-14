@@ -1,9 +1,11 @@
 import { forwardRef, FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useTranslate } from "@tolgee/react";
 import { Eye, EyeOff, KeyRound, Loader2, User } from "lucide-react";
 
 import { useAuth } from "@/lib/auth";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 
 // =====================================================================
 //  Login — "Sowing, a ritual entrance"
@@ -27,6 +29,7 @@ export function Login() {
   const loc = useLocation();
   const { login, isAuthenticated, loading: authLoading } = useAuth();
   const reduce = useReducedMotion();
+  const { t } = useTranslate();
 
   // Where to return after login. `?next=` is set by RequireAuth.
   const params = new URLSearchParams(loc.search);
@@ -60,10 +63,13 @@ export function Login() {
     } catch (err: unknown) {
       const ax = err as { response?: { status?: number; data?: { code?: string; error?: string } } };
       const code = ax?.response?.data?.code;
-      let msg = ax?.response?.data?.error ?? "Не удалось войти. Проверьте подключение.";
-      if (code === "invalid_credentials") msg = "Неверное имя пользователя или пароль.";
-      if (code === "account_disabled") msg = "Этот аккаунт отключён. Обратитесь к администратору.";
-      if (code === "rate_limited") msg = "Слишком много попыток. Подождите несколько минут.";
+      // Map server error codes → localized messages. Server's free-form
+      // `error` text is used only as a last-resort fallback because it's
+      // currently Russian-only.
+      let msg = ax?.response?.data?.error ?? t("errors.login.generic");
+      if (code === "invalid_credentials") msg = t("errors.login.invalidCredentials");
+      if (code === "account_disabled") msg = t("errors.login.accountDisabled");
+      if (code === "rate_limited") msg = t("errors.login.rateLimited");
       setError(msg);
       setShake((n) => n + 1);
     } finally {
@@ -101,9 +107,9 @@ export function Login() {
             <span className="font-display text-lg font-bold leading-none">С</span>
           </div>
           <div className="font-display text-sm font-semibold tracking-tight">
-            Свое&nbsp;Родное
+            {t("common.brand.name")}
             <span className="ml-2 text-ink-mute font-sans font-normal smallcaps text-[10px]">
-              calendar
+              {t("common.brand.short")}
             </span>
           </div>
         </header>
@@ -120,14 +126,13 @@ export function Login() {
           transition={{ delay: 1.4, duration: 0.7, ease: [0.2, 0.65, 0.2, 1] }}
           className="max-w-md"
         >
-          <p className="smallcaps text-[11px] text-ink-mute">Сезон 2026 · посевная</p>
+          <p className="smallcaps text-[11px] text-ink-mute">{t("auth.login.season")}</p>
           <h2 className="mt-2 font-display text-3xl leading-[1.05] tracking-tight">
-            Каждая кампания начинается{" "}
-            <span className="gradient-text italic">с одного решения</span>.
+            {t("auth.login.poem.before")}{" "}
+            <span className="gradient-text italic">{t("auth.login.poem.after")}</span>.
           </h2>
           <p className="mt-3 text-sm text-ink-dim">
-            Войдите, чтобы открыть AI-календарь продвижения и&nbsp;запустить
-            следующую сезонную волну продаж.
+            {t("auth.login.poem.body")}
           </p>
         </motion.div>
       </aside>
@@ -171,20 +176,24 @@ export function Login() {
             </svg>
           </span>
 
-          <div className="smallcaps text-[11px] text-leaf">вход в рабочую область</div>
+          <div className="absolute right-5 top-12 hidden sm:block">
+            <LanguageSwitcher variant="compact" />
+          </div>
+
+          <div className="smallcaps text-[11px] text-leaf">{t("auth.login.eyebrow")}</div>
           <h1 className="mt-2 font-display text-[2.1rem] leading-[1.05] tracking-tight">
-            Войти в{" "}
-            <span className="italic gradient-text">КиберФермеры</span>
+            {t("auth.login.title.before")}{" "}
+            <span className="italic gradient-text">{t("auth.login.title.brand")}</span>
           </h1>
           <p className="mt-2 text-sm text-ink-dim">
-            AI-календарь продвижения для производителей еды.
+            {t("auth.login.subtitle")}
           </p>
 
           <form className="mt-7 space-y-4" onSubmit={onSubmit} noValidate>
             <Field
               ref={usernameRef}
               id="username"
-              label="Имя пользователя"
+              label={t("auth.login.field.username")}
               icon={<User className="h-4 w-4" />}
               value={username}
               onChange={(v) => setUsername(v)}
@@ -193,7 +202,7 @@ export function Login() {
             />
             <Field
               id="password"
-              label="Пароль"
+              label={t("auth.login.field.password")}
               icon={<KeyRound className="h-4 w-4" />}
               type={showPw ? "text" : "password"}
               value={password}
@@ -205,7 +214,7 @@ export function Login() {
                   type="button"
                   onClick={() => setShowPw((s) => !s)}
                   className="grid h-7 w-7 place-items-center rounded text-ink-mute transition-colors hover:bg-bg-subtle hover:text-ink-dim focus-ring"
-                  aria-label={showPw ? "Скрыть пароль" : "Показать пароль"}
+                  aria-label={showPw ? t("auth.login.hidePassword") : t("auth.login.showPassword")}
                   tabIndex={-1}
                 >
                   {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -237,11 +246,11 @@ export function Login() {
               {submitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Проверяем…</span>
+                  <span>{t("auth.login.submitting")}</span>
                 </>
               ) : (
                 <>
-                  <span>Войти</span>
+                  <span>{t("auth.login.submit")}</span>
                   <span
                     aria-hidden
                     className="rounded border border-bg/30 px-1.5 py-0 font-mono text-[10px] leading-4 text-bg/80 transition-transform group-hover:translate-x-0.5"
@@ -255,9 +264,9 @@ export function Login() {
 
           {/* Admin-managed reminder — replaces "forgot password" */}
           <p className="mt-6 border-t border-line pt-5 text-xs leading-relaxed text-ink-mute">
-            <span className="smallcaps mr-1.5 text-ink-dim">учетные записи · </span>
-            создаются администратором. Если вам нужен доступ —{" "}
-            <span className="italic text-ink-dim">обратитесь к&nbsp;нему напрямую</span>.
+            <span className="smallcaps mr-1.5 text-ink-dim">{t("auth.login.adminNote.prefix")}</span>
+            {t("auth.login.adminNote.body")}{" "}
+            <span className="italic text-ink-dim">{t("auth.login.adminNote.suffix")}</span>.
           </p>
         </motion.div>
 
@@ -268,10 +277,10 @@ export function Login() {
               <span className="absolute inset-0 animate-ping rounded-full bg-leaf opacity-60" />
               <span className="relative inline-block h-1.5 w-1.5 rounded-full bg-leaf" />
             </span>
-            <span className="smallcaps">все сервисы online</span>
+            <span className="smallcaps">{t("common.status.online")}</span>
           </div>
           <Link to="/" className="transition-colors hover:text-ink-dim">
-            ← вернуться на главную
+            {t("common.cta.backToHome")}
           </Link>
         </footer>
       </main>

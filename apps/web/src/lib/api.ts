@@ -3,11 +3,30 @@ import type {
   CalendarBuild, CalendarEvent, Farmer, GeneratedContent, PlanCard,
   Product, Suggestion,
 } from "./types";
+import { LANG_STORAGE_KEY } from "./i18n";
 
 // In dev, Vite proxies /api → backend. In docker, nginx does the same.
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "",
   headers: { "Content-Type": "application/json" },
+});
+
+// ── language interceptor ──────────────────────────────────────────────
+// Every API call carries the user's current UI language so the backend
+// can adapt Gemini prompts (RU output for RU users, EN for EN). The
+// header name is deliberately custom — `Accept-Language` mirrors HTTP
+// content-negotiation while `X-UI-Language` is the canonical signal we
+// read in Go handlers (smaller, no quality values to parse).
+api.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const lang = window.localStorage.getItem(LANG_STORAGE_KEY);
+    if (lang) {
+      config.headers = config.headers ?? {};
+      config.headers["X-UI-Language"] = lang;
+      config.headers["Accept-Language"] = lang;
+    }
+  }
+  return config;
 });
 
 // ------ farmers ----------------------------------------------------------
