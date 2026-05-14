@@ -64,7 +64,15 @@ func (d *Deps) Login(c *gin.Context) {
 			return
 		}
 		log.Error().Err(err).Msg("login: user lookup failed")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error", "code": "lookup_failed"})
+		// TODO(post-diagnosis): drop `detail` once we identify the root cause.
+		// Currently surfacing the upstream SurrealDB error in the response so
+		// the browser console shows what's actually broken without needing
+		// container log access.
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "internal server error",
+			"code":   "lookup_failed",
+			"detail": err.Error(),
+		})
 		return
 	}
 
@@ -88,7 +96,11 @@ func (d *Deps) Login(c *gin.Context) {
 	raw, hash, err := auth.NewToken()
 	if err != nil {
 		log.Error().Err(err).Msg("login: token generation failed")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error", "code": "token_failed"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "internal server error",
+			"code":   "token_failed",
+			"detail": err.Error(),
+		})
 		return
 	}
 	ttl := d.SessionTTL
@@ -109,7 +121,13 @@ func (d *Deps) Login(c *gin.Context) {
 
 	if _, err := d.Repo.CreateSession(user.ID, hash, expiresAt, ipPtr, uaPtr); err != nil {
 		log.Error().Err(err).Msg("login: session create failed")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "internal server error", "code": "session_failed"})
+		// Surface the actual SurrealDB error so we can diagnose without
+		// Coolify log access. Remove `detail` once the root cause is fixed.
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error":  "internal server error",
+			"code":   "session_failed",
+			"detail": err.Error(),
+		})
 		return
 	}
 
