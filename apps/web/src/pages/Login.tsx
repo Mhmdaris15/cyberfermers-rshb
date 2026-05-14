@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { forwardRef, FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Eye, EyeOff, KeyRound, Loader2, User } from "lucide-react";
@@ -296,7 +296,11 @@ interface FieldProps {
   disabled?: boolean;
 }
 
-const Field = ((props: FieldProps & { ref?: React.Ref<HTMLInputElement> }) => {
+// React reserves `ref` as a special prop name — it can't be passed
+// through a regular function-component-typed-as-FC. We use forwardRef so
+// the parent's <Field ref={usernameRef} ...> hooks the DOM <input>
+// without triggering the "ref is not a prop" warning in production builds.
+const Field = forwardRef<HTMLInputElement, FieldProps>((props, ref) => {
   const {
     id, label, value, onChange, type = "text",
     icon, suffix, autoComplete, disabled,
@@ -309,7 +313,7 @@ const Field = ((props: FieldProps & { ref?: React.Ref<HTMLInputElement> }) => {
         </span>
       )}
       <input
-        ref={props.ref}
+        ref={ref}
         id={id}
         type={type}
         autoComplete={autoComplete}
@@ -332,7 +336,8 @@ const Field = ((props: FieldProps & { ref?: React.Ref<HTMLInputElement> }) => {
       )}
     </div>
   );
-}) as React.FC<FieldProps & { ref?: React.Ref<HTMLInputElement> }>;
+});
+Field.displayName = "Field";
 
 // ──────────────────────────────────────────────────────────────────────────
 //  <SowingArt> — custom SVG: a seed grows into a stem and leaf via

@@ -145,8 +145,10 @@ func (r *Repo) UpdateUser(id string, patch map[string]any) (*models.User, error)
 	if id == "" {
 		return nil, ErrUserNotFound
 	}
-	// Always bump updated_at; never let a stale value linger.
-	patch["updated_at"] = time.Now().UTC().Format(time.RFC3339Nano)
+	// Always bump updated_at; pass time.Time DIRECTLY so the variable
+	// marshaller emits a `d"..."` datetime literal (a string would be
+	// emitted as JSON and fail the schema's TYPE datetime check).
+	patch["updated_at"] = time.Now().UTC()
 
 	res, err := r.c.Query(
 		`UPDATE type::thing("app_user", $id) MERGE $patch
@@ -197,9 +199,13 @@ func (r *Repo) CreateSession(userID, tokenHash string, expiresAt time.Time, ip, 
 	    user_agent  = $ua
 	  );
 	  RETURN meta::id($created[0].id);`
+	// Pass time.Time DIRECTLY, not as a formatted string. The variable
+	// marshaller (db.surreal.go::marshalSurreal) emits a SurrealQL
+	// datetime literal (`d"..."`) for time.Time; a string would be
+	// emitted as a JSON string and fail the schema's TYPE datetime check.
 	res, err := r.c.Query(q, map[string]any{
 		"uid": userID, "th": tokenHash,
-		"exp": expiresAt.UTC().Format(time.RFC3339Nano),
+		"exp": expiresAt.UTC(),
 		"ip":  optionalString(ip), "ua": optionalString(userAgent),
 	})
 	if err != nil {
