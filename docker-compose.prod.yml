@@ -122,7 +122,13 @@ services:
     depends_on:
       api:
         condition: service_healthy
-    networks: [svoe-net]
+    # Attach to BOTH networks:
+    #   - svoe-net      → talk to the api service by name (api:8080)
+    #   - coolify       → let Coolify's Traefik proxy reach this container.
+    # The coolify network is declared as `external` below; the platform creates
+    # it once at install time. Without this attachment Traefik is on a
+    # different bridge and the upstream dial times out → Cloudflare 504.
+    networks: [svoe-net, coolify]
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/"]
       interval: 30s
@@ -142,3 +148,11 @@ networks:
   svoe-net:
     name: svoe-net-prod
     driver: bridge
+  # Pre-existing network owned by Coolify itself — created during Coolify
+  # install. We attach the web service to it so the platform's Traefik proxy
+  # can route inbound traffic without needing a host port binding.
+  # If your Coolify install uses a different proxy network name (some older
+  # builds use `coolify-proxy`), change `name:` below to match.
+  coolify:
+    external: true
+    name: coolify
