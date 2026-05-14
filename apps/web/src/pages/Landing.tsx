@@ -15,6 +15,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { SeasonalityRing } from "@/components/calendar/SeasonalityRing";
+import { LandingDemo } from "@/components/landing/LandingDemo";
+import { LandingArchitecture } from "@/components/landing/LandingArchitecture";
+import { LandingFAQ } from "@/components/landing/LandingFAQ";
 
 // =================================================================
 //  Landing — editorial dusk aesthetic.
@@ -103,8 +106,8 @@ export function Landing() {
                 </Link>
               </Button>
               <Button asChild size="lg" variant="secondary">
-                <a href="#how" rel="noreferrer">
-                  Как это работает
+                <a href="#demo" rel="noreferrer">
+                  Попробовать демо
                 </a>
               </Button>
             </div>
@@ -145,6 +148,9 @@ export function Landing() {
         {/* hairline */}
         <div className="mx-auto max-w-7xl border-t border-line/60 px-6" />
       </section>
+
+      {/* ── INTERACTIVE DEMO — try it without login ─────────────── */}
+      <LandingDemo />
 
       {/* ── HOW IT WORKS — three-step manifesto ────────────────── */}
       <section id="how" className="mx-auto max-w-7xl px-6 py-24">
@@ -190,6 +196,12 @@ export function Landing() {
           ))}
         </div>
       </section>
+
+      {/* ── ARCHITECTURE — animated node graph ──────────────────── */}
+      <LandingArchitecture />
+
+      {/* ── FAQ — accordion ─────────────────────────────────────── */}
+      <LandingFAQ />
 
       {/* ── PROOF · final CTA ───────────────────────────────────── */}
       <section className="mx-auto max-w-7xl px-6 pb-24">
