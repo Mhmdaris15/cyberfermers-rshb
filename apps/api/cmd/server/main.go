@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -48,10 +49,30 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
 	r.Use(middleware.Recovery(), middleware.RequestLogger())
+
+	// CORS — `cfg.CORSOrigins` has already been normalized (lowercased, trimmed,
+	// quotes stripped, trailing slashes removed). We use AllowOriginFunc instead
+	// of AllowOrigins so we can apply the same normalization to the incoming
+	// browser Origin header before comparing — exact-match on raw strings is
+	// far too easy to break with a stray space or scheme casing.
+	log.Info().Strs("cors_allowlist", cfg.CORSOrigins).Msg("cors configured")
+	if len(cfg.CORSOrigins) == 0 {
+		log.Warn().Msg("API_CORS_ORIGINS is empty — every browser request will be rejected")
+	}
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     cfg.CORSOrigins,
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowOriginFunc: func(origin string) bool {
+			norm := strings.ToLower(strings.TrimRight(strings.TrimSpace(origin), "/"))
+			for _, a := range cfg.CORSOrigins {
+				if a == norm {
+					return true
+				}
+			}
+			log.Debug().Str("origin", origin).Msg("cors: origin rejected")
+			return false
+		},
+		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "X-Requested-With"},
+		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))

@@ -45,7 +45,7 @@ func Load() *Config {
 	c := &Config{
 		APIPort:        envOr("API_PORT", "8080"),
 		LogLevel:       envOr("API_LOG_LEVEL", "info"),
-		CORSOrigins:    splitCSV(envOr("API_CORS_ORIGINS", "http://localhost:5173")),
+		CORSOrigins:    NormalizeOrigins(splitCSV(envOr("API_CORS_ORIGINS", "http://localhost:5173"))),
 		SurrealURL:     envOr("SURREAL_URL", "http://localhost:8000"),
 		SurrealUser:    envOr("SURREAL_USER", "root"),
 		SurrealPass:    envOr("SURREAL_PASS", "root"),
@@ -145,6 +145,26 @@ func splitCSV(s string) []string {
 	for _, p := range parts {
 		if p = strings.TrimSpace(p); p != "" {
 			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// NormalizeOrigins cleans up each entry in a CORS origin list so it matches
+// what browsers actually send in the Origin header:
+//   - strip wrapping single / double quotes (Coolify and other UIs sometimes
+//     quote values that contain `://`)
+//   - lowercase the scheme + host so matching is case-insensitive
+//   - strip any trailing slash so "https://x.tld/" and "https://x.tld" match
+func NormalizeOrigins(origins []string) []string {
+	out := make([]string, 0, len(origins))
+	for _, o := range origins {
+		o = strings.TrimSpace(o)
+		o = strings.Trim(o, `"'`)
+		o = strings.TrimRight(o, "/")
+		o = strings.ToLower(o)
+		if o != "" {
+			out = append(out, o)
 		}
 	}
 	return out
