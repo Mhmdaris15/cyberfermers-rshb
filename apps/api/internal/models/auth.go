@@ -17,12 +17,19 @@ import "time"
 //       UserPublic has no hash field at all.
 // ───────────────────────────────────────────────────────────────────────────
 
-// User mirrors the `app_user` row as the DB stores it. password_hash is
-// loaded here but explicitly stripped before any response leaves the API.
+// User mirrors the `app_user` row as the DB stores it. Internal to the
+// repo layer — never serialised back to clients. Every response path
+// projects through UserPublic via user.Public() instead.
+//
+// IMPORTANT: PasswordHash MUST have a real JSON tag (not `json:"-"`).
+// `json:"-"` blocks unmarshal too, not just marshal, so the hash would
+// be silently dropped when decoding the SurrealDB SELECT response. The
+// login bcrypt verify would then run against an empty string and ALWAYS
+// fail with 401 (regression triaged 2026-05-14).
 type User struct {
 	ID           string    `json:"id"`
 	Username     string    `json:"username"`
-	PasswordHash string    `json:"-"`              // never marshalled
+	PasswordHash string    `json:"password_hash"` // see comment above — do NOT use `json:"-"`
 	Role         string    `json:"role"`
 	DisplayName  *string   `json:"display_name,omitempty"`
 	Disabled     bool      `json:"disabled"`
