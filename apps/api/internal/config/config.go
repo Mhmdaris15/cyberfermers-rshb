@@ -32,6 +32,19 @@ type Config struct {
 	AudiencesYAMLPath       string
 	TrendsYAMLPath          string
 	SeasonalWindowsYAMLPath string
+
+	// ── Auth ──────────────────────────────────────────────────────
+	// Bootstrap admin: read ONLY on first boot when no admin exists.
+	// After that, changing these env values is a no-op.
+	AdminUsername string
+	AdminPassword string
+
+	// Session TTL in hours. 168 = 7 days. Fixed-expiry, no sliding window.
+	AuthSessionTTLHours int
+
+	// Login rate limit: max failed attempts per username per window before 429.
+	AuthLoginRateLimit     int
+	AuthLoginRateWindowMin int
 }
 
 // Load reads env from the closest .env walking upward from cwd. This keeps the
@@ -65,6 +78,12 @@ func Load() *Config {
 		AudiencesYAMLPath:       envOr("AUDIENCES_YAML_PATH", filepath.Join(root, "data", "seed", "audiences.yml")),
 		TrendsYAMLPath:          envOr("TRENDS_YAML_PATH", filepath.Join(root, "data", "seed", "trends.yml")),
 		SeasonalWindowsYAMLPath: envOr("SEASONAL_WINDOWS_YAML_PATH", filepath.Join(root, "data", "seed", "seasonal_windows.yml")),
+
+		AdminUsername:          envOr("ADMIN_USERNAME", ""),
+		AdminPassword:          os.Getenv("ADMIN_PASSWORD"), // intentionally NOT logged anywhere
+		AuthSessionTTLHours:    envInt("AUTH_SESSION_TTL_HOURS", 168),
+		AuthLoginRateLimit:     envInt("AUTH_LOGIN_RATE_LIMIT", 5),
+		AuthLoginRateWindowMin: envInt("AUTH_LOGIN_RATE_WINDOW_MIN", 15),
 	}
 	return c
 }

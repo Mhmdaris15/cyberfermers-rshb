@@ -276,3 +276,40 @@ DEFINE TABLE references   TYPE RELATION FROM ai_memory TO suggestion SCHEMAFULL;
 -- seasonal_window -[covers]-> event
 -- E.g. "ramson peak" covers the "spring greens" season event.
 DEFINE TABLE covers       TYPE RELATION FROM seasonal_window TO event SCHEMAFULL;
+
+-- =============================================================
+--   AUTHENTICATION — app_user + session
+--   Added 2026-05-14 (spec: docs/superpowers/specs/2026-05-14-auth-system-design.md).
+--   Tokens are 32 random bytes → 64-char hex, hashed with SHA-256
+--   before storage. The DB only ever sees `token_hash`, never the raw
+--   token; a DB dump leaks zero replayable credentials.
+-- =============================================================
+
+DEFINE TABLE app_user SCHEMAFULL;
+DEFINE FIELD username      ON app_user TYPE string ASSERT $value != NONE
+                                       VALUE string::lowercase(string::trim($value));
+DEFINE FIELD password_hash ON app_user TYPE string ASSERT $value != NONE;
+DEFINE FIELD role          ON app_user TYPE string
+                                       ASSERT $value IN ['admin','user']
+                                       DEFAULT 'user';
+DEFINE FIELD display_name  ON app_user TYPE option<string>;
+DEFINE FIELD disabled      ON app_user TYPE bool DEFAULT false;
+DEFINE FIELD created_at    ON app_user TYPE datetime DEFAULT time::now();
+DEFINE FIELD updated_at    ON app_user TYPE datetime DEFAULT time::now();
+DEFINE FIELD created_by    ON app_user TYPE option<record<app_user>>;
+
+DEFINE INDEX app_user_username_unique ON app_user FIELDS username UNIQUE;
+
+DEFINE TABLE session SCHEMAFULL;
+DEFINE FIELD user         ON session TYPE record<app_user> ASSERT $value != NONE;
+DEFINE FIELD token_hash   ON session TYPE string ASSERT $value != NONE;
+DEFINE FIELD created_at   ON session TYPE datetime DEFAULT time::now();
+DEFINE FIELD expires_at   ON session TYPE datetime ASSERT $value != NONE;
+DEFINE FIELD last_used_at ON session TYPE datetime DEFAULT time::now();
+DEFINE FIELD ip           ON session TYPE option<string>;
+DEFINE FIELD user_agent   ON session TYPE option<string>;
+DEFINE FIELD revoked      ON session TYPE bool DEFAULT false;
+
+DEFINE INDEX session_token_unique ON session FIELDS token_hash UNIQUE;
+DEFINE INDEX session_user         ON session FIELDS user;
+DEFINE INDEX session_expires      ON session FIELDS expires_at;

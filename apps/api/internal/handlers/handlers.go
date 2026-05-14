@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/db"
+	"github.com/rshb/svoe-rodnoe-calendar/api/internal/middleware"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/models"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/ai"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/chat"
@@ -25,6 +26,14 @@ type Deps struct {
 	Insights    *insights.Engine
 	ChatSvc     *chat.Service
 	GeminiModel string // used as audit label on persisted GeneratedContent rows
+
+	// Auth knobs — populated from config at boot.
+	SessionTTL         time.Duration // fixed-expiry session TTL (default 7d)
+	LoginRateLimit     int           // failed attempts per window before 429
+	LoginRateWindowMin int           // window size in minutes
+
+	// Login rate limiter — populated lazily inside Login handler.
+	loginLimiter *loginRateLimiter
 }
 
 func Register(r *gin.Engine, d *Deps) {
@@ -38,22 +47,48 @@ func Register(r *gin.Engine, d *Deps) {
 
 	api := r.Group("/api")
 	{
-		api.GET("/farmers", d.ListFarmers)
-		api.GET("/farmers/:id", d.GetFarmer)
-		api.GET("/farmers/:id/products", d.GetFarmerProducts)
-		api.GET("/farmers/:id/calendar", d.GetCalendar)
-		api.GET("/farmers/:id/plan", d.GetPlan)
-		api.GET("/farmers/:id/insights", d.GetInsights)
-		api.POST("/farmers/:id/chat", d.Chat)
-		api.GET("/farmers/:id/stream", d.Stream)
+		// ── public ───────────────────────────────────────────────────
+		// Login is the ONLY pre-auth endpoint. Everything else is gated.
+		api.POST("/auth/login", d.Login)
 
-		api.GET("/events", d.ListEvents)
-		api.POST("/suggestions", d.CreateSuggestion)
-		api.GET("/suggestions/:id", d.GetSuggestion)
-		api.POST("/suggestions/:id/generate", d.GenerateContent)
-		api.GET("/suggestions/:id/content", d.ListContent)
-		api.POST("/plan/cards", d.AddPlanCard)
-		api.POST("/plan/cards/move", d.MovePlanCard)
+		// ── authed ───────────────────────────────────────────────────
+		// `nil` Repo (e.g. in tests) means the auth middleware can't run;
+		// guarded so health_test.go with an empty Deps still passes.
+		var authed *gin.RouterGroup
+		if d.Repo != nil {
+			authed = api.Group("", middleware.RequireAuth(d.Repo))
+		} else {
+			authed = api.Group("")
+		}
+
+		authed.POST("/auth/logout", d.Logout)
+		authed.GET("/auth/me", d.Me)
+
+		authed.GET("/farmers", d.ListFarmers)
+		authed.GET("/farmers/:id", d.GetFarmer)
+		authed.GET("/farmers/:id/products", d.GetFarmerProducts)
+		authed.GET("/farmers/:id/calendar", d.GetCalendar)
+		authed.GET("/farmers/:id/plan", d.GetPlan)
+		authed.GET("/farmers/:id/insights", d.GetInsights)
+		authed.POST("/farmers/:id/chat", d.Chat)
+		authed.GET("/farmers/:id/stream", d.Stream)
+
+		authed.GET("/events", d.ListEvents)
+		authed.POST("/suggestions", d.CreateSuggestion)
+		authed.GET("/suggestions/:id", d.GetSuggestion)
+		authed.POST("/suggestions/:id/generate", d.GenerateContent)
+		authed.GET("/suggestions/:id/content", d.ListContent)
+		authed.POST("/plan/cards", d.AddPlanCard)
+		authed.POST("/plan/cards/move", d.MovePlanCard)
+
+		// ── admin-only ───────────────────────────────────────────────
+		admin := authed.Group("/admin", middleware.RequireAdmin())
+		admin.GET("/users", d.ListUsers)
+		admin.POST("/users", d.CreateUser)
+		admin.PATCH("/users/:id", d.UpdateUser)
+		admin.DELETE("/users/:id", d.DeleteUser)
+		admin.GET("/sessions", d.ListSessions)
+		admin.DELETE("/sessions/:id", d.RevokeSession)
 	}
 }
 

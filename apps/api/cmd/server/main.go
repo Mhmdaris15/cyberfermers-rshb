@@ -10,6 +10,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
+	"github.com/rshb/svoe-rodnoe-calendar/api/internal/auth"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/config"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/db"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/handlers"
@@ -39,6 +40,34 @@ func main() {
 	}
 
 	repo := db.NewRepo(dbc)
+
+	// Bootstrap first admin from env vars when the DB has no admin yet.
+	// On every subsequent boot this is a no-op (HasActiveAdmin gates it).
+	// Refusing to start when env vars are missing AND no admin exists
+	// prevents a deployed API with no way to log in.
+	switch res, err := auth.EnsureFirstAdmin(repo, cfg.AdminUsername, cfg.AdminPassword); {
+	case err != nil:
+		log.Fatal().Err(err).Msg("auth bootstrap failed — refusing to start")
+	case res == auth.BootstrapCreated:
+		log.Info().Str("username", strings.ToLower(strings.TrimSpace(cfg.AdminUsername))).
+			Msg("bootstrapped first admin from env")
+	default:
+		log.Info().Msg("auth: admin already exists, env-bootstrap skipped")
+	}
+
+	// Periodic cleanup of expired and old-revoked sessions. 1h tick is
+	// plenty — the hot path filters by expires_at anyway, so stale rows
+	// only matter for table size.
+	go func() {
+		t := time.NewTicker(1 * time.Hour)
+		defer t.Stop()
+		for range t.C {
+			if err := repo.CleanupExpiredSessions(); err != nil {
+				log.Warn().Err(err).Msg("session cleanup failed")
+			}
+		}
+	}()
+
 	aiClient := ai.NewClient(cfg.GeminiKey, cfg.GeminiModel, cfg.GeminiEmbed)
 	contentSvc := ai.NewContentService(aiClient)
 	reco := recommendation.New(repo)
@@ -79,9 +108,12 @@ func main() {
 
 	handlers.Register(r, &handlers.Deps{
 		Repo: repo, Reco: reco, Content: contentSvc, Plan: planSvc,
-		Insights:    insightsEngine,
-		ChatSvc:     chatSvc,
-		GeminiModel: cfg.GeminiModel,
+		Insights:           insightsEngine,
+		ChatSvc:            chatSvc,
+		GeminiModel:        cfg.GeminiModel,
+		SessionTTL:         time.Duration(cfg.AuthSessionTTLHours) * time.Hour,
+		LoginRateLimit:     cfg.AuthLoginRateLimit,
+		LoginRateWindowMin: cfg.AuthLoginRateWindowMin,
 	})
 
 	addr := ":" + cfg.APIPort
