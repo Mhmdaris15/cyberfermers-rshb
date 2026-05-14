@@ -117,6 +117,15 @@ func Register(r *gin.Engine, d *Deps) {
 		authed.POST("/farmers/:id/blogs", d.CreateFarmerBlog)
 		authed.GET("/blogs/:id", d.GetBlog)
 
+		// ── recipes module (phase-6) ───────────────────────────────
+		// Spec: docs/superpowers/specs/2026-05-14-recipes-module-design.md
+		// Recipes are generated_content with channel='recipe' (structured
+		// body — ingredients/steps/nutrition arrays). Same lazy-bootstrap
+		// pattern as Stories/Blogs (freeform-recipes event).
+		authed.GET("/farmers/:id/recipes", d.ListFarmerRecipes)
+		authed.POST("/farmers/:id/recipes", d.CreateFarmerRecipe)
+		authed.GET("/recipes/:id", d.GetRecipe)
+
 		// ── admin-only ───────────────────────────────────────────────
 		admin := authed.Group("/admin", middleware.RequireAdmin())
 		admin.GET("/users", d.ListUsers)

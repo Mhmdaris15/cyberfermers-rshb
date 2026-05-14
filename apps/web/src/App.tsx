@@ -10,6 +10,7 @@ import { AiPage } from "./pages/AiPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { StoriesPage } from "./pages/StoriesPage";
 import { BlogsPage } from "./pages/BlogsPage";
+import { RecipesPage } from "./pages/RecipesPage";
 import { Login } from "./pages/Login";
 import { Forbidden } from "./pages/Forbidden";
 import { AdminUsers } from "./pages/AdminUsers";
@@ -36,6 +37,7 @@ export function App() {
           <Route path="plan" element={<PlanPage />} />
           <Route path="stories" element={<StoriesPage />} />
           <Route path="blogs" element={<BlogsPage />} />
+          <Route path="recipes" element={<RecipesPage />} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="ai" element={<AiPage />} />
           <Route path="settings" element={<SettingsPage />} />
