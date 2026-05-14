@@ -101,6 +101,14 @@ func Register(r *gin.Engine, d *Deps) {
 		authed.GET("/content/:id/revisions", d.ListContentRevisions)
 		authed.POST("/content/:id/revisions/:n/restore", d.RestoreContentRevision)
 
+		// ── stories module (phase-4) ───────────────────────────────
+		// Spec: docs/superpowers/specs/2026-05-14-stories-module-design.md
+		// Stories are generated_content with channel='story'; these
+		// routes are a dedicated view + free-form creation flow.
+		authed.GET("/farmers/:id/stories", d.ListFarmerStories)
+		authed.POST("/farmers/:id/stories", d.CreateFarmerStory)
+		authed.GET("/stories/:id", d.GetStory)
+
 		// ── admin-only ───────────────────────────────────────────────
 		admin := authed.Group("/admin", middleware.RequireAdmin())
 		admin.GET("/users", d.ListUsers)

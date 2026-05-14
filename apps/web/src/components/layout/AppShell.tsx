@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  BookOpen,
   Calendar,
   LayoutDashboard,
   ListChecks,
@@ -21,6 +22,7 @@ const items = [
   { to: "dashboard", label: "Дашборд", Icon: LayoutDashboard },
   { to: "calendar", label: "Календарь", Icon: Calendar },
   { to: "plan", label: "План", Icon: ListChecks },
+  { to: "stories", label: "Истории", Icon: BookOpen },
   { to: "products", label: "Каталог", Icon: Store },
   { to: "ai", label: "AI-ассистент", Icon: Sparkles },
   { to: "settings", label: "Настройки", Icon: Settings },

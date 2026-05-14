@@ -8,6 +8,7 @@ import { PlanPage } from "./pages/PlanPage";
 import { ProductsPage } from "./pages/ProductsPage";
 import { AiPage } from "./pages/AiPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { StoriesPage } from "./pages/StoriesPage";
 import { Login } from "./pages/Login";
 import { Forbidden } from "./pages/Forbidden";
 import { AdminUsers } from "./pages/AdminUsers";
@@ -32,6 +33,7 @@ export function App() {
           <Route path="dashboard" element={<Dashboard />} />
           <Route path="calendar" element={<CalendarPage />} />
           <Route path="plan" element={<PlanPage />} />
+          <Route path="stories" element={<StoriesPage />} />
           <Route path="products" element={<ProductsPage />} />
           <Route path="ai" element={<AiPage />} />
           <Route path="settings" element={<SettingsPage />} />
