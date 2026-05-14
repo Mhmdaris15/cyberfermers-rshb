@@ -5,12 +5,13 @@
 #  Build args:
 #    APP_VERSION  (optional) — stamped into version metadata if you wire it
 #
-#  Includes 5 binaries:
-#    /app/bin/server         — HTTP API
-#    /app/bin/import         — XLSX → SurrealDB
-#    /app/bin/seed           — events / audiences / trends / windows
-#    /app/bin/tag-products   — rule + Gemini SKU tagging
-#    /app/bin/embed          — Gemini batch embeddings
+#  Includes 6 binaries:
+#    /app/bin/server          — HTTP API
+#    /app/bin/import          — XLSX → SurrealDB
+#    /app/bin/seed            — events / audiences / trends / windows
+#    /app/bin/tag-products    — rule + Gemini SKU tagging
+#    /app/bin/embed           — Gemini batch embeddings
+#    /app/bin/reset-password  — admin/user password reset (no HTTP needed)
 #
 #  Run individually:
 #    docker compose -f docker-compose.prod.yml exec api /app/bin/seed
@@ -37,11 +38,12 @@ COPY apps/api/ .
 RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     go mod tidy && \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/server       ./cmd/server && \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/import       ./cmd/import && \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/seed         ./cmd/seed && \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/tag-products ./cmd/tag-products && \
-    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/embed        ./cmd/embed
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/server         ./cmd/server && \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/import         ./cmd/import && \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/seed           ./cmd/seed && \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/tag-products   ./cmd/tag-products && \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/embed          ./cmd/embed && \
+    CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/reset-password ./cmd/reset-password
 
 # ---- runtime ---------------------------------------------------------
 FROM alpine:3.20
@@ -52,11 +54,12 @@ ENV TZ=Europe/Moscow
 WORKDIR /app
 
 # Binaries
-COPY --from=build /out/server       /app/bin/server
-COPY --from=build /out/import       /app/bin/import
-COPY --from=build /out/seed         /app/bin/seed
-COPY --from=build /out/tag-products /app/bin/tag-products
-COPY --from=build /out/embed        /app/bin/embed
+COPY --from=build /out/server         /app/bin/server
+COPY --from=build /out/import         /app/bin/import
+COPY --from=build /out/seed           /app/bin/seed
+COPY --from=build /out/tag-products   /app/bin/tag-products
+COPY --from=build /out/embed          /app/bin/embed
+COPY --from=build /out/reset-password /app/bin/reset-password
 
 # Static assets the binaries read at runtime (schema, seed YAMLs).
 # `data/raw/` is intentionally NOT copied — the xlsx is huge and
