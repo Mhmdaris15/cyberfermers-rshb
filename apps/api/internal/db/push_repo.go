@@ -110,6 +110,7 @@ func (r *Repo) EnsurePushSuggestion(farmerID, eventID string) (string, error) {
 	  LET $existing = (SELECT id FROM suggestion
 	    WHERE farmer = $f AND event = $e LIMIT 1);
 	  IF array::len($existing) > 0 {
+	    UPDATE $existing[0].id SET product_reasons = {};
 	    RETURN meta::id($existing[0].id);
 	  } ELSE {
 	    LET $created = (CREATE suggestion SET
@@ -120,7 +121,7 @@ func (r *Repo) EnsurePushSuggestion(farmerID, eventID string) (string, error) {
 	      date_window_end   = time::now() + 3650d,
 	      promo             = { kind: "none", value: 0 },
 	      predicted_lift    = { orders_delta: 0, revenue_delta: 0 },
-	      product_reasons   = [],
+	      product_reasons   = {},
 	      score             = 0.0,
 	      status            = 'proposed'
 	    );
