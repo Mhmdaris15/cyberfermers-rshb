@@ -1,7 +1,7 @@
 # Свое Родное · Farmer Marketing Calendar
 
-> AI-powered event marketing calendar for farmers on `svoe-rodnoe.ru`.
-> Built for **Хакатон РСХБ.Цифра в НИЯУ МИФИ** (Case №1).
+> Календарь для событийного маркетинга на базе ИИ для фермеров в svoe-rodnoe.ru.
+> Сделано для **Хакатон РСХБ.Цифра в НИЯУ МИФИ** (Case №1).
 
 A production-grade MVP that ingests a farmer's catalog, matches SKUs against a curated event knowledge base (holidays, Orthodox calendar, themed weeks, seasonality), and uses **Gemini** to generate ready-to-launch multi-channel campaign assets — push, story, blog, recipe, chat-to-repeat-buyer, social — with a deterministic ROI engine on top.
 
