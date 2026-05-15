@@ -32,7 +32,7 @@ func (r *Repo) ListFarmerSocialPosts(farmerID, statusFilter string) ([]models.Ge
 	    published_at, archived_at, updated_at, created_at
 	  FROM generated_content
 	  WHERE channel = 'social'
-	    AND suggestion.farmer = $f`
+	    AND suggestion IN (SELECT VALUE id FROM suggestion WHERE farmer = $f)`
 	vars := map[string]any{"f": full}
 	if statusFilter != "" {
 		q += ` AND status = $st`

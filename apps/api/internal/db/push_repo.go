@@ -39,7 +39,7 @@ func (r *Repo) ListFarmerPushes(farmerID, statusFilter string) ([]models.Generat
 	    published_at, archived_at, updated_at, created_at
 	  FROM generated_content
 	  WHERE channel = 'push'
-	    AND suggestion.farmer = $f`
+	    AND suggestion IN (SELECT VALUE id FROM suggestion WHERE farmer = $f)`
 	vars := map[string]any{"f": full}
 	if statusFilter != "" {
 		q += ` AND status = $st`
