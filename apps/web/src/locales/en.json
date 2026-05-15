@@ -80,6 +80,14 @@
   "landing.footer.copyright": "© 2026 · RSHB Hackathon Team",
   "landing.footer.stack": "React · Vite · Go · SurrealDB · Gemini 2.5",
 
+  "landing.video.eyebrow": "video demo",
+  "landing.video.title.line1": "The product, working.",
+  "landing.video.title.line2": "Two minutes, no slides.",
+  "landing.video.intro": "A recorded run of the real flow — farmer opens the dashboard, the assistant assembles a campaign, the plan updates. Unedited.",
+  "landing.video.play": "Play video",
+  "landing.video.duration": "≈ 2 MIN",
+  "landing.video.format": "MP4 · NO VOICEOVER",
+
   "landing.gallery.eyebrow": "product surfaces",
   "landing.gallery.title.line1": "Not one screen.",
   "landing.gallery.title.line2": "A whole marketing desk.",

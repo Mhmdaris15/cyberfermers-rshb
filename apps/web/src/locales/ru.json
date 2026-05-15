@@ -80,6 +80,14 @@
   "landing.footer.copyright": "© 2026 · Команда RSHB Hackathon",
   "landing.footer.stack": "React · Vite · Go · SurrealDB · Gemini 2.5",
 
+  "landing.video.eyebrow": "видео-демо",
+  "landing.video.title.line1": "Продукт в работе.",
+  "landing.video.title.line2": "Две минуты без слайдов.",
+  "landing.video.intro": "Запись реального сценария: фермер открывает кабинет, ассистент собирает кампанию, план обновляется. Без монтажа.",
+  "landing.video.play": "Запустить видео",
+  "landing.video.duration": "≈ 2 МИН",
+  "landing.video.format": "MP4 · БЕЗ ЗВУКА КОММЕНТАРИЯ",
+
   "landing.gallery.eyebrow": "поверхности продукта",
   "landing.gallery.title.line1": "Не один экран.",
   "landing.gallery.title.line2": "Рабочий стол маркетингового отдела.",

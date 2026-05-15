@@ -19,6 +19,7 @@ import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { SeasonalityRing } from "@/components/calendar/SeasonalityRing";
 import { LandingDemo } from "@/components/landing/LandingDemo";
+import { LandingVideo } from "@/components/landing/LandingVideo";
 import { LandingArchitecture } from "@/components/landing/LandingArchitecture";
 import { LandingGallery } from "@/components/landing/LandingGallery";
 import { LandingFAQ } from "@/components/landing/LandingFAQ";
@@ -155,6 +156,9 @@ export function Landing() {
 
       {/* ── INTERACTIVE DEMO — try it without login ─────────────── */}
       <LandingDemo />
+
+      {/* ── VIDEO — recorded product demonstration ──────────────── */}
+      <LandingVideo />
 
       {/* ── HOW IT WORKS — three-step manifesto ────────────────── */}
       <section id="how" className="mx-auto max-w-7xl px-6 py-24">
