@@ -115,12 +115,13 @@ func (r *Repo) EnsureStorytellingSuggestion(farmerID, eventID string) (string, e
 	  LET $existing = (SELECT id FROM suggestion
 	    WHERE farmer = $f AND event = $e LIMIT 1);
 	  IF array::len($existing) > 0 {
-	    UPDATE $existing[0].id SET product_reasons = {};
+	    UPDATE $existing[0].id SET product_reasons = {}, products = [];
 	    RETURN meta::id($existing[0].id);
 	  } ELSE {
 	    LET $created = (CREATE suggestion SET
 	      farmer            = $f,
 	      event             = $e,
+	      products          = [],
 	      channels          = ['story'],
 	      date_window_start = time::now(),
 	      date_window_end   = time::now() + 3650d,
