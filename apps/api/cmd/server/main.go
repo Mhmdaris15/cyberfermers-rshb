@@ -135,8 +135,17 @@ func main() {
 			log.Debug().Str("origin", origin).Msg("cors: origin rejected")
 			return false
 		},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization", "Accept", "X-Requested-With"},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
+		// X-UI-Language + Accept-Language are sent by the FE axios client
+		// for every request (Tolgee i18n integration). They MUST be in the
+		// allow-list — otherwise the browser blocks the real request after
+		// a 204 preflight ("blocked by CORS policy: request header field
+		// x-ui-language is not allowed"). The bug surfaces as a login that
+		// silently fails right after the user switches language.
+		AllowHeaders: []string{
+			"Origin", "Content-Type", "Authorization", "Accept",
+			"X-Requested-With", "X-UI-Language", "Accept-Language",
+		},
 		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,

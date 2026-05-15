@@ -40,7 +40,7 @@ services:
     networks: [svoe-net]
     healthcheck:
       test: ["CMD", "/surreal", "isready", "--conn", "http://localhost:8000"]
-      interval: 5s
+      interval: 60s
       retries: 30
       start_period: 5s
     logging:
@@ -97,7 +97,7 @@ services:
         - --quiet
         - --spider
         - http://localhost:8080/health
-      interval: 10s
+      interval: 60s
       timeout: 3s
       retries: 5
       start_period: 30s
@@ -144,7 +144,7 @@ services:
     networks: [svoe-net, coolify]
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://localhost/"]
-      interval: 30s
+      interval: 60s
       retries: 3
       start_period: 10s
     logging:
