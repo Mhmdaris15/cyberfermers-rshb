@@ -2,6 +2,8 @@
 
 > Open `http://localhost:5173` on a 1080p+ projector. Dark theme. Sound off.
 > If Wi-Fi is shaky on the venue, the LLM fan-out gracefully falls back to deterministic copy — the demo never breaks.
+>
+> **Updates (Phases 2–12):** content lifecycle/revisions, rich plan board (4-tab card drawer), standalone Stories / Blogs / Recipes / Social / Push pages, AI Workspace (starter packs + slash commands + save-as), redesigned editorial landing, full RU/EN i18n with AI language pinning, JWT-less session auth + admin panel. The 7-min canonical flow below stays. The **Extended demo (§ Extended)** below adds optional 30–60-second detours per surface for longer slots (10–15 min) or judge follow-ups.
 
 ---
 
@@ -109,3 +111,97 @@ Click **«AI-ассистент»**.
 | Почему SurrealDB? | "Один движок — и документы (event KB), и граф (farmer→product→tag), и SQL-like запросы. Меньше движущихся частей." |
 | Что с галлюцинациями? | "Каждое поколение — JSON-схема, обязательные поля, тон в системе. Промпт явно запрещает выдумки про фермера. И drag-фоллбэк: если Gemini ответит мусор, мы показываем рукописный шаблон." |
 | Что не успели? | "Telegram-бот, A/B-копи через embeddings, реальную интеграцию с push API маркетплейса. Архитектура подготовлена — стабы есть в `services/ai/content.go`." |
+
+---
+
+## Extended demo — Phases 2-12 detours (use when slot is 10-15 min)
+
+The canonical 7-min flow above stays. Each detour below is **30–60 seconds** and slots in between Section 4 (Plan board) and Section 5 (AI-конвейер). Pick 2-3 per delivery, not all six.
+
+### E.1 Content lifecycle / revisions (Phase 2) — 25 s
+
+From the **action sheet** (after fan-out), open the **Push** tab and click "Редактировать".
+
+> *"Каждое изменение — отдельная ревизия. Таблица `content_revision` хранит всё: кто, когда, что. Откатиться к любой версии — один клик."*
+
+Click "История" → show the timeline. Roll back one revision. Toast confirms.
+
+### E.2 Rich plan board (Phase 3) — 45 s
+
+On `/plan`, click any card. **CardDetailDrawer** opens with 4 tabs: *Обзор · Контент · Комментарии · Активность*.
+
+> *"Это не просто чип на колонке. Карточка несёт всю кампанию: ROI, каналы, контент, комменты команды, лог активности. SurrealDB держит граф плана и контента в одном движке."*
+
+Switch to *Комментарии*, add one line. Switch to *Активность* — лог обновился.
+
+В левом сайдбаре переключись на другой board через **BoardSwitcher**.
+
+> *"Несколько досок на фермера. Кампания по сезону, отдельная по B2B — изолированы."*
+
+### E.3 Stories / Blogs / Recipes / Social / Push standalone pages (Phases 4-8) — 60 s
+
+Click через все 5 страниц в сайдбаре быстро (по 8-10 секунд каждая):
+
+- **/stories** — `StoryCard` превью (image_prompt + caption), открой одну → `StoryEditorDrawer`, картинка слева, поля справа.
+- **/blogs** — `BlogCard` (title + lede preview), открой → two-pane writer view (markdown слева, превью справа).
+- **/recipes** — `RecipeCard`, открой → structured fields: ingredients chips, steps list, время, аудитория, теги.
+- **/social** — `SocialCard` с platform badges (Telegram / VK / Insta), открой → `SocialPostEditorDrawer` с **carousel** и **platform-specific preview** (каждая платформа со своим char-limit).
+- **/push** — `PushCard` с urgency tone + dispatch status, открой → **lock-screen preview** (iOS/Android-стиль), urgency slider.
+
+> *"Шесть каналов — каждый со своей рабочей поверхностью. Не фан-аут в табах, а полноценные страницы с историей версий, дисплеем, статусами. Это работа маркетингового отдела, не одной кнопки."*
+
+### E.4 AI Workspace (Phase 9) — 45 s
+
+Перейди на `/ai`. Покажи **StarterRail** слева — пакеты быстрых старта по сезонам / каналам / аудиториям.
+
+Клик по стартеру → промпт вставляется в **Composer**. Напечатай слэш-команду `/story` — autocomplete выпадает.
+
+Отправь. **Conversation** показывает структурированный JSON-ответ (story format). Внизу — **SaveAsMenu**.
+
+Клик **«Сохранить как → Сторис»**. Toast: «Сохранено в Сторис».
+
+> *"Любой AI-вывод — структурированный JSON. Любой можно одним кликом сохранить в Сторис, Блог, Рецепт, Соцсети или Push. Чат — точка входа, не конечная остановка."*
+
+### E.5 Landing redesign (Phase 10) — 30 s
+
+Открой новую вкладку → `/`. Проскроль:
+
+- **Hero** — Fraunces italic «у нас выходит», сезонный ring вращается.
+- **LandingDemo** — пройди один цикл стрим-анимации (matching → ranking → generating → planning).
+- **LandingArchitecture** — оживлённый граф 6 нод, дашед-флоу на гранях.
+- **LandingFAQ** — раскрой один Q (tone-coded chip).
+- **Proof** — итоговый CTA.
+
+> *"Лендинг — отдельный продукт. Гость видит не маркетинговый текст, а реальный поток данных продукта. Editorial-dusk эстетика — серый, тёмный, типографический, без AI-clip-art."*
+
+### E.6 Auth + admin + i18n (Phases 11-12 + базовая аутентификация) — 40 s
+
+Из лендинга клик **«Войти»** → `/login`. Светлый glass-form, RU-EN свитчер в углу.
+
+Входи как admin. Перейди в `/admin/users` — таблица фермеров + кнопка «Создать», открывает side-sheet.
+
+Перейди в `/admin/sessions` — группированные сессии, revoke на каждой.
+
+> *"Реальная многопользовательская аутентификация — сессии в SurrealDB, без JWT-наследия. Гард `RequireAuth` на всех cost-sensitive эндпоинтах. Админка — не tech demo, а production-grade."*
+
+Кликни **LanguageSwitcher** в навбаре. RU → EN. Перейди обратно на `/ai`, вызови генерацию.
+
+> *"AI-вывод тоже переключается. Axios-интерсептор шлёт `X-UI-Language` и `Accept-Language`. Go-API пинит язык в промпте Gemini. Не перевод после — выдача сразу на нужном языке."*
+
+---
+
+## What stands out per phase (talking points cheat sheet)
+
+| Phase | Surface | One-line pitch |
+|---|---|---|
+| 2 | Content revisions | "Каждое изменение — версия. Полный откат за один клик." |
+| 3 | Plan board (rich card + 4 tabs + BoardSwitcher) | "Кампания живёт как карточка: ROI, каналы, контент, комменты, лог." |
+| 4 | Stories page | "Image-prompt + caption pair, structured JSON, готов к Stories API." |
+| 5 | Blogs page | "Two-pane writer, 600–900 знаков, заголовок + лед + хештеги, всё под схемой." |
+| 6 | Recipes page | "Structured ingredients, steps, время, аудитория — не свободный текст." |
+| 7 | Social page | "Multi-platform с carousel и platform-specific previews + char-limits." |
+| 8 | Push page | "Lock-screen preview, urgency, диспатч-скоринг — закрывает цепочку." |
+| 9 | AI Workspace | "Чат с слэш-командами и «Сохранить как» в любой канал." |
+| 10 | Landing redesign | "Editorial-dusk — лендинг как часть продукта, не маркетинговая обёртка." |
+| 11-12 | Tolgee i18n | "RU/EN, ~200 ключей, AI-вывод тоже переключается через X-UI-Language." |
+| Auth | Login + admin | "JWT-less сессии, RequireAuth guard, /admin/users + /admin/sessions." |
