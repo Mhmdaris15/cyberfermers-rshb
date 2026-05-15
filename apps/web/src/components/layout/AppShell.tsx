@@ -23,6 +23,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getFarmer } from "@/lib/api";
 import { ChatLauncher, ChatSheet } from "@/components/chat/ChatSheet";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
+import { UserMenu } from "@/components/auth/UserMenu";
 
 // Nav items are static (icons + route slugs); the visible label is resolved
 // at render time so language switches re-render the labels in place.
@@ -115,9 +116,12 @@ export function AppShell() {
             </Link>
           </div>
           <div className="flex items-center gap-2 text-xs text-ink-mute">
+            <span className="hidden items-center gap-1.5 md:inline-flex">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-leaf" />
+              <span>{t("common.status.apiLive")}</span>
+            </span>
             <LanguageSwitcher />
-            <span className="ml-1 h-2 w-2 animate-pulse rounded-full bg-leaf" />
-            <span className="hidden sm:inline">{t("common.status.apiLive")}</span>
+            <UserMenu />
           </div>
         </header>
 

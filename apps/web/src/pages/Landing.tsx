@@ -16,6 +16,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
+import { UserMenu } from "@/components/auth/UserMenu";
 import { SeasonalityRing } from "@/components/calendar/SeasonalityRing";
 import { LandingDemo } from "@/components/landing/LandingDemo";
 import { LandingArchitecture } from "@/components/landing/LandingArchitecture";
@@ -71,6 +72,7 @@ export function Landing() {
               {t("landing.badge.hackathon")}
             </Badge>
             <LanguageSwitcher />
+            <UserMenu />
           </div>
         </nav>
 
