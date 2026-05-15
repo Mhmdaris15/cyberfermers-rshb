@@ -15,6 +15,77 @@ React + Vite + TS  ◀──REST──▶  Go (Gin)  ◀──HTTP/SQL──▶ 
                                   └──HTTPS──▶  Gemini API (structured JSON)
 ```
 
+![Landing page — editorial dusk aesthetic, RU/EN i18n, animated seasonality ring](apps/web/public/images/landing-page.png)
+
+---
+
+## Screenshots
+
+### Core surfaces
+
+The farmer's command center. Dashboard with KPIs and action cards, a 40+ event calendar, an AI workspace with slash commands and save-as-to-any-channel, and a rich Kanban plan board with 4-tab card drawers.
+
+| Dashboard | Calendar |
+|:-:|:-:|
+| ![Farmer dashboard with KPIs, action cards, and revenue forecast](apps/web/public/images/dashboard.png) | ![Curated event calendar — 40+ events across 6 categories](apps/web/public/images/calendar-month.png) |
+| **Farmer dashboard** — KPIs, action cards, revenue forecast | **Calendar** — 40+ events, filters, trends |
+
+| AI Workspace | Plan board (Kanban) |
+|:-:|:-:|
+| ![AI workspace with starter packs and slash commands](apps/web/public/images/ai-workspace-starter.png) | ![Kanban plan board: proposed → planned → live → done](apps/web/public/images/kanban-board.png) |
+| **AI Workspace** — starter packs, `/story` `/blog` slash commands, save-as menu | **Plan board** — drag-and-drop with spring physics |
+
+### Interactive demo & AI assistant
+
+Public landing has a no-login interactive demo of the full 7-stage pipeline. Authenticated users get the conversational AI assistant.
+
+| Interactive demo (public) | AI assistant (auth) |
+|:-:|:-:|
+| ![Interactive demo on landing — 7-stage stream, no login required](apps/web/public/images/interactive-demo.png) | ![AI assistant — conversational entry point with structured JSON outputs](apps/web/public/images/ai-assistant.png) |
+
+### Content channels (Phases 4–8)
+
+Six channels, each with its own production surface — not just tabs in a fan-out. Image-prompt + caption pairs for stories, two-pane blog writer, structured recipe editor, multi-platform social composer with carousel and per-platform preview, push composer with lock-screen mockup.
+
+| Stories | Blog editor |
+|:-:|:-:|
+| ![Stories editor — image-prompt + caption pair, API-ready](apps/web/public/images/stories-editor.png) | ![Two-pane blog writer with markdown + live preview](apps/web/public/images/blog-editor.png) |
+| **Stories** — image-prompt + caption, ready for Stories API | **Blog** — two-pane writer, 600–900 chars under JSON schema |
+
+| Recipe editor | Social composer |
+|:-:|:-:|
+| ![Structured recipe editor with ingredients, steps, time, audience](apps/web/public/images/recipe-editor.png) | ![Multi-platform social editor with carousel and per-platform preview](apps/web/public/images/social-editor.png) |
+| **Recipes** — structured ingredients, steps, time, audience | **Social** — TG / VK / Insta with per-platform char-limits |
+
+| Recipe (detail) | Push composer |
+|:-:|:-:|
+| ![Recipe editor — structured fields detail view](apps/web/public/images/recipe-editor-2.png) | ![Push editor with iOS/Android lock-screen preview and urgency slider](apps/web/public/images/push-editor.png) |
+| **Recipe (detail)** — schema-driven, not free text | **Push** — lock-screen preview, urgency, dispatch status |
+
+### Plan board details (Phase 3)
+
+A plan card is not a chip — it carries the whole campaign: ROI, channels, content, comments, activity log. SurrealDB holds the plan graph and content in a single engine.
+
+| Plan card drawer | Plan card generator | ROI popover |
+|:-:|:-:|:-:|
+| ![Plan card drawer with 4 tabs: overview, content, comments, activity](apps/web/public/images/plan-card-drawer.png) | ![Plan card generator — six-channel parallel Gemini fan-out](apps/web/public/images/plan-card-generator.png) | ![ROI assumption popover — deterministic Go formula, hover to inspect](apps/web/public/images/roi-popover.png) |
+| **4-tab card drawer** | **6-channel fan-out** | **ROI assumptions popover** |
+
+### Admin (auth-gated)
+
+JWT-less session auth with `RequireAuth` / `RequireAdmin` guards. Full admin panel for user creation and session revocation.
+
+| Admin · Users | Admin · Sessions |
+|:-:|:-:|
+| ![Admin users table with side-sheet create](apps/web/public/images/admin-users.png) | ![Session management — grouped by user, revoke per-session](apps/web/public/images/session-management.png) |
+| **Users** — table + side-sheet create | **Sessions** — grouped, revoke per-session |
+
+### Architecture
+
+![Animated architecture graph — six nodes, dashed data-flow edges, lives on the landing page](apps/web/public/images/aarchitecture-design.png)
+
+Six nodes (Frontend / API / SurrealDB / Gemini / Recommender / Tagging), dashed animated data-flow edges, three annotated pipelines (embed · tag · planning). The deck's signature visual lives directly on the landing page — see `apps/web/src/components/landing/LandingArchitecture.tsx`.
+
 ---
 
 ## Quick start (hybrid: Docker DB + native API + native Web)

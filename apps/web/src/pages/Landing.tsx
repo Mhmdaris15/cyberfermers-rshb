@@ -19,6 +19,7 @@ import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { SeasonalityRing } from "@/components/calendar/SeasonalityRing";
 import { LandingDemo } from "@/components/landing/LandingDemo";
 import { LandingArchitecture } from "@/components/landing/LandingArchitecture";
+import { LandingGallery } from "@/components/landing/LandingGallery";
 import { LandingFAQ } from "@/components/landing/LandingFAQ";
 
 // =================================================================
@@ -200,6 +201,9 @@ export function Landing() {
 
       {/* ── ARCHITECTURE — animated node graph ──────────────────── */}
       <LandingArchitecture />
+
+      {/* ── GALLERY — product surfaces ──────────────────────────── */}
+      <LandingGallery />
 
       {/* ── FAQ — accordion ─────────────────────────────────────── */}
       <LandingFAQ />
