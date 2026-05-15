@@ -109,7 +109,7 @@ func main() {
 	reco := recommendation.New(repo)
 	planSvc := plan.New(repo)
 	insightsEngine := insights.New(repo)
-	chatSvc := chat.New(repo, aiClient, insightsEngine)
+	chatSvc := chat.New(repo, aiClient, insightsEngine, planSvc)
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()

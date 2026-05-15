@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, Bot, Loader2, MessageSquare, Send, Sparkles, X } from "lucide-react";
+import { ArrowUpRight, Bot, Loader2, MessageSquare, RotateCcw, Send, Sparkles, X } from "lucide-react";
 
 import { Sheet, SheetBody, SheetHeader } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -9,9 +9,10 @@ import { chatTurn, type ChatAction, type ChatMessage } from "@/lib/api";
 import { useToast } from "@/components/ui/toast";
 
 // =================================================================
-//  ChatSheet — grounded Q&A drawer. Floating launcher in the bottom-
-//  right corner of every farmer page. The model can only answer
-//  through the 5 tools exposed by the chat service; no free-form.
+//  ChatSheet — strategist-mode AI assistant. Persists transcript in
+//  sessionStorage per farmer so a page reload doesn't lose context.
+//  The backend tools handle data grounding; this UI focuses on
+//  conversational continuity (followups + transparent tool steps).
 // =================================================================
 
 interface ChatSheetProps {
@@ -24,24 +25,60 @@ interface UiMessage extends ChatMessage {
   pending?: boolean;
   actions?: ChatAction[];
   used?: string[];
+  followups?: string[];
 }
 
+// Starter chips lean strategist-first: each one prompts a workflow,
+// not a fact lookup. "Что делать на этой неделе" forces the assistant
+// to propose, not just answer.
 const STARTER_CHIPS = [
-  "Какие события у меня в ближайшие 30 дней?",
+  "Что делать на этой неделе?",
+  "Подбери идеи под Новый год",
   "Какие SKU подходят к Пасхе?",
-  "Что AI думает о моём каталоге?",
-  "Что если поднять скидку на ягодный сезон до 15%?",
-  "Какие каналы я не использую?",
+  "Запланируй кампанию на Медовый Спас",
+  "Где у меня дыры в каталоге?",
 ];
+
+const transcriptKey = (farmerId: string) => `svoe.chat.transcript.${farmerId}`;
 
 export function ChatSheet({ open, onOpenChange }: ChatSheetProps) {
   const { farmerId = "10060" } = useParams();
   const toast = useToast();
-  const [items, setItems] = useState<UiMessage[]>([]);
+  const [items, setItems] = useState<UiMessage[]>(() => {
+    if (typeof window === "undefined") return [];
+    try {
+      const raw = sessionStorage.getItem(transcriptKey(farmerId));
+      return raw ? (JSON.parse(raw) as UiMessage[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
+
+  // Persist transcript per-farmer in sessionStorage so page reloads
+  // don't blow away the conversation. Keyed by farmer so switching
+  // farmers gives each one its own thread.
+  useEffect(() => {
+    try {
+      const clean = items.filter((m) => !m.pending);
+      sessionStorage.setItem(transcriptKey(farmerId), JSON.stringify(clean));
+    } catch {
+      /* sessionStorage quota — non-fatal */
+    }
+  }, [items, farmerId]);
+
+  // When farmer changes, swap to that farmer's transcript.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(transcriptKey(farmerId));
+      setItems(raw ? (JSON.parse(raw) as UiMessage[]) : []);
+    } catch {
+      setItems([]);
+    }
+  }, [farmerId]);
 
   // Auto-scroll on new message.
   useEffect(() => {
@@ -54,6 +91,16 @@ export function ChatSheet({ open, onOpenChange }: ChatSheetProps) {
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 200);
   }, [open]);
+
+  const resetTranscript = useCallback(() => {
+    setItems([]);
+    try {
+      sessionStorage.removeItem(transcriptKey(farmerId));
+    } catch {
+      /* noop */
+    }
+    setTimeout(() => inputRef.current?.focus(), 50);
+  }, [farmerId]);
 
   async function send(text: string) {
     const trimmed = text.trim();
@@ -76,7 +123,14 @@ export function ChatSheet({ open, onOpenChange }: ChatSheetProps) {
       setItems((prev) =>
         prev.map((m) =>
           m.id === id + 1
-            ? { ...m, text: reply.text, pending: false, actions: reply.actions, used: reply.used }
+            ? {
+                ...m,
+                text: reply.text,
+                pending: false,
+                actions: reply.actions,
+                used: reply.used,
+                followups: reply.followups ?? [],
+              }
             : m,
         ),
       );
@@ -102,19 +156,32 @@ export function ChatSheet({ open, onOpenChange }: ChatSheetProps) {
             <Bot className="h-4 w-4" />
           </div>
           <div className="space-y-0.5">
-            <div className="smallcaps text-[10px] text-leaf">AI-ассистент</div>
+            <div className="smallcaps text-[10px] text-leaf">AI-маркетинг-стратег</div>
             <h2 className="font-display text-xl font-semibold leading-tight tracking-tight">
-              О каталоге и календаре
+              План, события, кампании
             </h2>
           </div>
         </div>
-        <button
-          onClick={() => onOpenChange(false)}
-          className="text-ink-mute hover:text-ink"
-          aria-label="Закрыть"
-        >
-          <X className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          {items.length > 0 && (
+            <button
+              onClick={resetTranscript}
+              className="inline-flex items-center gap-1 rounded-md border border-line bg-bg-elevated/60 px-2 py-1 text-[11px] text-ink-mute transition-colors hover:border-leaf/40 hover:text-ink"
+              aria-label="Новый чат"
+              title="Очистить и начать заново"
+            >
+              <RotateCcw className="h-3 w-3" />
+              <span>Новый</span>
+            </button>
+          )}
+          <button
+            onClick={() => onOpenChange(false)}
+            className="text-ink-mute hover:text-ink"
+            aria-label="Закрыть"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       </SheetHeader>
 
       <SheetBody className="flex flex-col gap-4">
@@ -124,7 +191,7 @@ export function ChatSheet({ open, onOpenChange }: ChatSheetProps) {
           ) : (
             <AnimatePresence initial={false}>
               {items.map((m) => (
-                <Bubble key={m.id} m={m} />
+                <Bubble key={m.id} m={m} onFollowup={send} />
               ))}
             </AnimatePresence>
           )}
@@ -142,7 +209,7 @@ export function ChatSheet({ open, onOpenChange }: ChatSheetProps) {
   );
 }
 
-function Bubble({ m }: { m: UiMessage }) {
+function Bubble({ m, onFollowup }: { m: UiMessage; onFollowup: (s: string) => void }) {
   const isUser = m.role === "user";
   return (
     <motion.div
@@ -193,6 +260,24 @@ function Bubble({ m }: { m: UiMessage }) {
                 <ArrowUpRight className="h-3 w-3" />
               </Link>
             ))}
+          </div>
+        )}
+        {!m.pending && m.followups && m.followups.length > 0 && (
+          <div className="flex flex-col items-stretch gap-1.5 pt-1.5">
+            <div className="smallcaps text-[9px] text-ink-mute">следующий шаг</div>
+            <div className="flex flex-wrap gap-1.5">
+              {m.followups.map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => onFollowup(f)}
+                  className="group inline-flex items-center gap-1 rounded-md border border-line bg-bg-subtle/60 px-2 py-1 text-left text-[11px] text-ink-dim transition-colors hover:border-amber/40 hover:bg-bg-subtle hover:text-ink focus-ring"
+                >
+                  <span className="text-amber transition-colors group-hover:text-amber">▸</span>
+                  <span>{f}</span>
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -248,9 +333,10 @@ function EmptyChat({ onPick }: { onPick: (s: string) => void }) {
         <Sparkles className="h-5 w-5" />
       </div>
       <div>
-        <h3 className="font-display text-lg font-semibold tracking-tight">Спросите AI</h3>
+        <h3 className="font-display text-lg font-semibold tracking-tight">AI-стратег на связи</h3>
         <p className="mt-1 text-sm text-ink-dim">
-          Ответы опираются только на ваш каталог, события и план кампаний. Никаких выдумок.
+          Я не отвечаю — я предлагаю план. События, SKU, каналы, прогноз — на ваших данных.
+          Согласитесь — добавлю карточку в план сам.
         </p>
       </div>
       <div className="flex flex-wrap justify-center gap-2 pt-2">

@@ -384,7 +384,7 @@ func (d *Deps) Chat(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), 60*time.Second)
 	defer cancel()
 
-	reply, err := d.ChatSvc.Answer(ctx, c.Param("id"), req.History, req.Message)
+	reply, err := d.ChatSvc.Answer(ctx, c.Param("id"), callerID(c), req.History, req.Message)
 	if err != nil {
 		c.JSON(500, gin.H{"error": err.Error()})
 		return

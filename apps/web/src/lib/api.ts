@@ -98,6 +98,7 @@ export interface ChatAction {
 }
 export interface ChatReply {
   text: string;
+  followups: string[];
   actions: ChatAction[];
   used: string[];
   evidence: Record<string, any>;

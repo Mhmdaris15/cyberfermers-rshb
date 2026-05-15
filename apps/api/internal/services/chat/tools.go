@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/models"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/ai"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/insights"
+	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/plan"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/recommendation"
 )
 
@@ -23,8 +25,25 @@ import (
 
 type ToolCtx struct {
 	FarmerID string
+	UserID   string // authenticated caller, recorded in plan-card activity
 	Repo     *db.Repo
+	AI       *ai.Client
 	Insights *insights.Engine
+	Plan     *plan.Service
+
+	// ctx carries the request deadline so semantic search can be cancelled
+	// when the overall chat turn times out. Optional; tools fall back to
+	// context.Background() if nil.
+	ctx context.Context
+}
+
+// Ctx is a tiny accessor so tool implementations can grab the request
+// context without making it a public field.
+func (c ToolCtx) Ctx() context.Context {
+	if c.ctx == nil {
+		return context.Background()
+	}
+	return c.ctx
 }
 
 type Tool struct {
@@ -43,15 +62,17 @@ func Declarations(tools []Tool) []ai.ToolDecl {
 	return out
 }
 
-// Registry returns the canonical 5-tool set bound to no farmer yet; callers
+// Registry returns the canonical tool set bound to no farmer yet; callers
 // must pass ToolCtx with FarmerID when running each tool.
 func Registry() []Tool {
 	return []Tool{
 		toolUpcomingEvents(),
+		toolFindEventsSemantic(),
 		toolSKUsMatching(),
 		toolInsights(),
 		toolPlanStatus(),
 		toolSimulatePromo(),
+		toolCreatePlanCardForEvent(),
 	}
 }
 
@@ -346,6 +367,210 @@ func toolSimulatePromo() Tool {
 // effectiveBaseDiscount looks up what PromoSuggest would give for this event.
 func effectiveBaseDiscount(ev models.Event) float64 {
 	return float64(recommendation.PromoSuggest(ev).DiscountPct)
+}
+
+// --- 6. find_events_semantic -----------------------------------------
+// Semantic search over the curated event KB. Bridges the user's free-form
+// phrase ("новогодние праздники", "НГ", "что есть про мёд") to the 768-d
+// embedding index via Gemini embedding-001 + SurrealDB KNN. Use this in
+// preference to `get_upcoming_events` whenever the user names a theme,
+// season, or holiday — even with a different word, abbreviation, or
+// synonym. The dot-traversal-free version of "do you know what they mean".
+
+func toolFindEventsSemantic() Tool {
+	return Tool{
+		Decl: ai.ToolDecl{
+			Name: "find_events_semantic",
+			Description: "Семантический поиск событий по смыслу запроса. " +
+				"Используй для синонимов, аббревиатур, тематических формулировок: " +
+				"\"НГ\" → Новый год; \"зимние праздники\" → Рождество/Святки; " +
+				"\"медовая тема\" → Медовый Спас, Пасечник; \"начало сезона\" → " +
+				"сезонные окна. Возвращает топ-K событий по близости к запросу.",
+			Parameters: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"query": map[string]any{
+						"type":        "string",
+						"description": "Свободная формулировка пользователя (1-6 слов).",
+					},
+					"top_k": map[string]any{
+						"type":        "integer",
+						"description": "Сколько результатов вернуть. По умолчанию 5.",
+					},
+				},
+				"required": []string{"query"},
+			},
+		},
+		Run: func(ctx ToolCtx, args map[string]any) (map[string]any, error) {
+			q := stringArg(args, "query")
+			if q == "" {
+				return map[string]any{"error": "query обязателен"}, nil
+			}
+			k := intArg(args, "top_k", 5)
+			hits, err := findEventsSemantic(ctx.Ctx(), ctx, q, k)
+			if err != nil {
+				// Soft fallback: keyword scan so the chat still completes.
+				return map[string]any{
+					"error":   err.Error(),
+					"events":  []any{},
+					"count":   0,
+					"fallback": "Семантика недоступна — попробуйте get_upcoming_events.",
+				}, nil
+			}
+			out := make([]map[string]any, 0, len(hits))
+			for _, h := range hits {
+				out = append(out, map[string]any{
+					"slug":         h.Event.Slug,
+					"title":        h.Event.Title,
+					"type":         string(h.Event.Type),
+					"start_date":   h.Event.StartDate.Format("2006-01-02"),
+					"end_date":     h.Event.EndDate.Format("2006-01-02"),
+					"product_tags": h.Event.ProductTags,
+					"themes":       h.Event.Themes,
+				})
+			}
+			return map[string]any{
+				"query":  q,
+				"events": out,
+				"count":  len(out),
+			}, nil
+		},
+	}
+}
+
+// --- 7. create_plan_card_for_event -----------------------------------
+// Workflow tool — actually creates a kanban card. This makes the
+// assistant consultative: instead of telling the user "вы можете
+// добавить карточку", it adds the card and reports back with the id +
+// route, so the next assistant turn can reference it ("создал карточку
+// для Пасхи в колонке Предложено, могу сгенерировать пуш?").
+
+func toolCreatePlanCardForEvent() Tool {
+	return Tool{
+		Decl: ai.ToolDecl{
+			Name: "create_plan_card_for_event",
+			Description: "Создаёт новую карточку на канбан-доске плана кампаний для указанного события. " +
+				"Используй, когда пользователь явно соглашается с предложением " +
+				"(\"да, добавь\", \"запланируй\", \"возьмём\"). Возвращает id карточки " +
+				"и ссылку на план — ассистент может затем предложить сгенерировать контент.",
+			Parameters: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"event_slug": map[string]any{
+						"type":        "string",
+						"description": "Slug события, для которого нужна карточка.",
+					},
+					"column": map[string]any{
+						"type":        "string",
+						"description": "Колонка плана: proposed | planned | live. По умолчанию proposed.",
+					},
+					"note": map[string]any{
+						"type":        "string",
+						"description": "Короткая заметка от ассистента (≤140 символов) — почему карточка имеет смысл.",
+					},
+				},
+				"required": []string{"event_slug"},
+			},
+		},
+		Run: func(ctx ToolCtx, args map[string]any) (map[string]any, error) {
+			if ctx.Plan == nil {
+				return map[string]any{"error": "plan service unavailable"}, nil
+			}
+			slug := stringArg(args, "event_slug")
+			if slug == "" {
+				return map[string]any{"error": "event_slug обязателен"}, nil
+			}
+			column := strings.ToLower(stringArg(args, "column"))
+			if column != "planned" && column != "live" {
+				column = "proposed"
+			}
+			note := stringArg(args, "note")
+			if len(note) > 140 {
+				note = note[:140]
+			}
+
+			now := time.Now()
+			evs, err := ctx.Repo.ListEventsBetween(now.AddDate(0, -3, 0), now.AddDate(0, 12, 0))
+			if err != nil {
+				return nil, err
+			}
+			var ev *models.Event
+			for i := range evs {
+				if evs[i].Slug == slug {
+					ev = &evs[i]
+					break
+				}
+			}
+			if ev == nil {
+				return map[string]any{"error": "событие не найдено: " + slug}, nil
+			}
+
+			// Reuse the recommendation pipeline to produce a real suggestion
+			// payload (matched SKUs + channels + ROI), then persist via the
+			// canonical plan.Service.AddCard path so chat-created cards are
+			// indistinguishable from cards added by the UI.
+			farmer, err := ctx.Repo.GetFarmer(ctx.FarmerID)
+			if err != nil {
+				return nil, err
+			}
+			products, err := ctx.Repo.ListProductsByFarmer(ctx.FarmerID)
+			if err != nil {
+				return nil, err
+			}
+			matched := recommendation.MatchProducts(*ev, products)
+			if len(matched) > 5 {
+				matched = matched[:5]
+			}
+			channels := ev.Channels
+
+			productIDs := make([]string, 0, len(matched))
+			productReasons := make(map[string][]string, len(matched))
+			for _, m := range matched {
+				productIDs = append(productIDs, m.Product.ID)
+				productReasons[m.Product.ID] = m.Reasons
+			}
+			promo := recommendation.PromoSuggest(*ev)
+			lift := recommendation.EstimateLift(*ev, *farmer, matched, channels)
+
+			sug := &models.Suggestion{
+				FarmerID:        ctx.FarmerID,
+				EventID:         ev.ID,
+				ProductIDs:      productIDs,
+				Channels:        channels,
+				DateWindowStart: ev.StartDate,
+				DateWindowEnd:   ev.EndDate,
+				Promo:           promo,
+				PredictedLift:   lift,
+				ProductReasons:  productReasons,
+				Score:           float64(len(matched)),
+				Status:          "proposed",
+			}
+			card := &models.PlanCard{
+				FarmerID:  ctx.FarmerID,
+				Column:    column,
+				Note:      note,
+				BoardType: "campaign",
+				Title:     ev.Title,
+				Priority:  "med",
+				Channels:  channels,
+			}
+			created, err := ctx.Plan.AddCard(ctx.FarmerID, ctx.UserID, sug, card)
+			if err != nil {
+				return map[string]any{"error": err.Error()}, nil
+			}
+			return map[string]any{
+				"plan_card_id":  created.ID,
+				"event_slug":    slug,
+				"event_title":   ev.Title,
+				"column":        column,
+				"channels":      channels,
+				"matched_skus":  len(matched),
+				"orders_delta":  lift.OrdersDelta,
+				"revenue_delta": lift.RevenueDelta,
+				"plan_route":    "/farmer/" + ctx.FarmerID + "/plan",
+			}, nil
+		},
+	}
 }
 
 // --- helpers ---------------------------------------------------------
