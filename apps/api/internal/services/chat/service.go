@@ -121,9 +121,16 @@ func (s *Service) Answer(ctx context.Context, farmerID, userID string, history [
 		}, nil
 	}
 
-	// Build the Gemini-shaped history.
+	// Build the Gemini-shaped history. Gemini rejects Content parts with
+	// empty text (HTTP 400), so we skip any historical turn whose body
+	// trimmed to nothing — protects against bubbles that were persisted
+	// before a transient error landed, or assistant replies that were
+	// all-followup-bullets and stripped to "" by extractFollowups.
 	conv := make([]ai.Content, 0, len(history)+1)
 	for _, m := range history {
+		if strings.TrimSpace(m.Text) == "" {
+			continue
+		}
 		role := m.Role
 		if role == "assistant" {
 			role = "model"
@@ -155,11 +162,19 @@ func (s *Service) Answer(ctx context.Context, farmerID, userID string, history [
 		resp, err := s.AI.ChatTurn(callCtx, sysPrompt, conv, decls)
 		cancel()
 		if err != nil {
-			log.Warn().Err(err).Msg("chat turn failed")
+			log.Warn().
+				Err(err).
+				Int("turn", turn).
+				Int("history_len", len(conv)).
+				Int("system_chars", len(sysPrompt)).
+				Strs("used", used).
+				Msg("chat turn failed")
 			return &Reply{
 				Text:      "Не получилось получить ответ от AI. Попробуйте переформулировать вопрос.",
 				Followups: []string{},
 				Actions:   []Action{},
+				Used:      used,
+				Evidence:  evidence,
 			}, nil
 		}
 		// Find a functionCall in the parts; if none, take text and we're done.
@@ -250,7 +265,16 @@ func extractFollowups(text string) (string, []string) {
 			body = append(body, ln)
 		}
 	}
-	return strings.TrimSpace(strings.Join(body, "\n")), fups
+	clean := strings.TrimSpace(strings.Join(body, "\n"))
+	// Defence: if the model replied with ONLY ▸-bullets the body would
+	// be empty. Fold the first bullet back into the body so the bubble
+	// always has something to render — otherwise the empty text would
+	// be persisted on the FE and break the next turn's history.
+	if clean == "" && len(fups) > 0 {
+		clean = fups[0]
+		fups = fups[1:]
+	}
+	return clean, fups
 }
 
 // sessionStateBlock condenses evidence collected from prior tool calls

@@ -116,8 +116,11 @@ export function ChatSheet({ open, onOpenChange }: ChatSheetProps) {
     ]);
 
     try {
+      // Drop pending placeholders AND any historical turn whose body is
+      // empty — the backend rejects empty-text Content parts and an empty
+      // bubble can sneak in from earlier failed turns or stripped replies.
       const history = items
-        .filter((m) => !m.pending)
+        .filter((m) => !m.pending && m.text.trim().length > 0)
         .map(({ role, text }) => ({ role, text }) as ChatMessage);
       const reply = await chatTurn(farmerId, trimmed, history);
       setItems((prev) =>
