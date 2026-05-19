@@ -9,19 +9,24 @@
 #    api        — Go binary, no host bind mounts
 #    web        — Vite static build behind nginx (proxies /api → api:8080)
 #
-#  No service publishes a host port. The platform's reverse proxy
-#  (Coolify Traefik / Cloudify-managed Caddy / external Nginx) is
-#  expected to attach to `svoe-net-prod` and route :80/:443 to the
-#  `web` container. To run this stack standalone (no platform proxy),
-#  re-add `ports: ["${WEB_PORT:-8080}:80"]` to the web service.
+#  Coolify orchestration rules (the reason this file looks "bare"):
+#    - NO top-level `name:`         — Coolify owns the compose project name.
+#    - NO `container_name:`         — Coolify generates per-deploy names.
+#    - NO manual Traefik labels     — Coolify auto-injects routing labels
+#                                     based on the UI-configured domains.
+#    - NO `name:` on networks       — Docker autogenerates the bridge name,
+#                                     scoped to this Coolify project so other
+#                                     deployments cannot collide with it.
+#    - Only `web` joins external `coolify` network for Traefik ingress;
+#      `api` and `surrealdb` stay on the internal bridge.
+#
+#  To run this stack standalone (no Coolify), re-add
+#  `ports: ["${WEB_PORT:-8080}:80"]` to the web service.
 # =====================================================================
-
-name: svoe-rodnoe-prod
 
 services:
   surrealdb:
     image: surrealdb/surrealdb:v2.1.4
-    container_name: svoe-surreal-prod
     restart: unless-stopped
     user: "0:0"
     command:
@@ -53,7 +58,6 @@ services:
     build:
       context: .
       dockerfile: ./apps/api/Dockerfile
-    container_name: svoe-api-prod
     restart: unless-stopped
     env_file: .env.production
     environment:
@@ -76,20 +80,11 @@ services:
     depends_on:
       surrealdb:
         condition: service_healthy
-    # IMPORTANT: do NOT pin this service's networks list to include `coolify`
-    # explicitly. Coolify auto-attaches its proxy network to services that
-    # have a UI-configured domain, and a hand-written networks list overrides
-    # that auto-injection, breaking the api subdomain routing. Keep this on
-    # svoe-net only — web (same-origin reverse-proxy) reaches us here, and
-    # Coolify wires its own proxy onto this container at deploy time.
+    # Internal-only: Coolify auto-attaches its proxy network to any
+    # service that has a UI-configured domain. Configure the API's
+    # subdomain in the Coolify UI; do NOT hand-write the `coolify`
+    # network here or it overrides Coolify's auto-injection.
     networks: [svoe-net]
-    # Tell Traefik the API speaks on 8080. Without this label Traefik
-    # defaults its loadbalancer to :80 (no listener on this container)
-    # and every request times out as 504 even when the container is
-    # healthy and reachable over Docker DNS. Coolify's auto-injected
-    # router for this service's domain will reuse this service.
-    labels:
-      - "traefik.http.services.api.loadbalancer.server.port=8080"
     healthcheck:
       test:
         - CMD
@@ -122,7 +117,6 @@ services:
         # deploys (recommended), leave empty so the FE uses relative /api.
         VITE_API_URL: ${PUBLIC_API_URL:-}
         VITE_APP_NAME: ${PUBLIC_APP_NAME:-Свое Родное · Calendar}
-    container_name: svoe-web-prod
     restart: unless-stopped
     # No `ports:` binding — Coolify's Traefik proxy already owns host
     # 80/443 and routes to this container via the Docker network. Use
@@ -158,8 +152,11 @@ volumes:
     name: svoe_surreal_data_prod
 
 networks:
+  # Internal bridge for service-to-service traffic. Intentionally
+  # unnamed — Docker autogenerates a project-scoped name, so two
+  # Coolify deployments of this stack cannot collide on the network
+  # name even when both happen to be running.
   svoe-net:
-    name: svoe-net-prod
     driver: bridge
   # Pre-existing network owned by Coolify itself — created during Coolify
   # install. We attach the web service to it so the platform's Traefik proxy
