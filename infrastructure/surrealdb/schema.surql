@@ -41,6 +41,14 @@ DEFINE FIELD url                 ON farmer TYPE option<string>;
 DEFINE FIELD channels            ON farmer TYPE array<string> DEFAULT [];
 DEFINE FIELD audience_focus      ON farmer TYPE array<string> DEFAULT [];
 DEFINE FIELD risk_appetite       ON farmer TYPE string DEFAULT "balanced";
+-- Brand-voice fields (Settings page): all optional, all additive.
+-- brand_voice: one of warm | business | folksy | sharp | expert | "" (default).
+-- signature_phrase appended to long-form content; forbidden_words feeds the
+-- system prompt as a negative constraint; default_cta replaces the generic CTA.
+DEFINE FIELD brand_voice         ON farmer TYPE option<string>;
+DEFINE FIELD signature_phrase    ON farmer TYPE option<string>;
+DEFINE FIELD forbidden_words     ON farmer TYPE option<array<string>>;
+DEFINE FIELD default_cta         ON farmer TYPE option<string>;
 -- Semantic profile of the farm (embedding of shop_name + description + categories).
 DEFINE FIELD embedding           ON farmer TYPE option<array<float>>;
 DEFINE FIELD created_at          ON farmer TYPE datetime DEFAULT time::now();

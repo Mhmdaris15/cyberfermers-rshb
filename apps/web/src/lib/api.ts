@@ -96,6 +96,38 @@ export const getTagVocabulary = (farmerId: string) =>
     .get<{ tags: string[]; count: number }>(`/api/farmers/${farmerId}/products/tags/vocabulary`)
     .then((r) => r.data.tags);
 
+// ------ settings ---------------------------------------------------------
+
+export type FarmerPatch = Partial<{
+  shop_name: string;
+  description: string;
+  region: string;
+  url: string;
+  channels: string[];
+  audience_focus: string[];
+  risk_appetite: string;
+  brand_voice: string;
+  signature_phrase: string;
+  forbidden_words: string[];
+  default_cta: string;
+}>;
+
+export const updateFarmer = (id: string, patch: FarmerPatch) =>
+  api.patch<Farmer>(`/api/farmers/${id}`, patch).then((r) => r.data);
+
+export const changePassword = (currentPassword: string, newPassword: string) =>
+  api
+    .post<{ ok: boolean }>(`/api/auth/change-password`, {
+      current_password: currentPassword,
+      new_password: newPassword,
+    })
+    .then((r) => r.data);
+
+export const revokeOtherSessions = () =>
+  api
+    .post<{ ok: boolean; kept_session_id: string }>(`/api/auth/sessions/revoke-others`)
+    .then((r) => r.data);
+
 // ------ events -----------------------------------------------------------
 export const listEvents = (from?: string, to?: string) =>
   api.get<{ events: CalendarEvent[] }>("/api/events", { params: { from, to } }).then((r) => r.data.events);

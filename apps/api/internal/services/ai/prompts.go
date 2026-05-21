@@ -13,6 +13,54 @@ const SystemRU = `Ты — маркетинг-ассистент маркетп�
 Опирайся ТОЛЬКО на переданные данные о фермере и товарах.
 Возвращай строгий JSON по переданной схеме.`
 
+// brandVoicePresets — mapping from the Settings-page enum to a one-paragraph
+// tone directive appended to the system prompt. Keep these SHORT — the model
+// pays attention to the first ~3 sentences of each section more than the rest.
+//
+// Adding a new voice: pick a key (used in the FE chip + persisted on
+// farmer.brand_voice), then add a Russian paragraph here. The FE side has
+// to be updated to render the chip; the backend is otherwise voice-agnostic.
+var brandVoicePresets = map[string]string{
+	"warm":     `Голос бренда — тёплый и человечный. Пиши как от первого лица, обращайся к покупателю на "вы", но без официоза. Делай акцент на эмоциях, заботе и сезонной радости.`,
+	"business": `Голос бренда — деловой и сдержанный. Конкретика, цифры, факты. Без восклицательных знаков, без эмоциональных эпитетов. Предложение, ценность, призыв.`,
+	"folksy":   `Голос бренда — по-домашнему, тёплый деревенский говор. Допустимы простые обороты, рассказ о людях и хозяйстве. Никакого канцелярита.`,
+	"sharp":    `Голос бренда — острый, лаконичный, чуть провокационный. Короткие фразы. Сильные глаголы. Никаких "наслаждайтесь" и "побалуйте себя".`,
+	"expert":   `Голос бренда — экспертный, с упором на технологию и качество. Сорт, регион, срок выдержки, температурный режим. Покупатель — гурман, объясняй детали.`,
+}
+
+// BuildSystemPromptForFarmer takes the shared SystemRU and decorates it with
+// per-farmer tone, signature, forbidden words, and CTA, all read from the
+// Farmer.BrandVoice + friends. Returns SystemRU unchanged when no brand
+// fields are set — backwards compatible with farmers who never opened
+// the Settings page.
+//
+// Reads from the *models.Farmer pointer to avoid an import cycle: this file
+// already imports models indirectly via ai.SystemRU consumers, so we accept
+// the small fields explicitly rather than the struct.
+func BuildSystemPromptForFarmer(brandVoice, signaturePhrase, defaultCTA string, forbiddenWords []string) string {
+	out := SystemRU
+	if tone, ok := brandVoicePresets[brandVoice]; ok && tone != "" {
+		out += "\n\nГОЛОС БРЕНДА: " + tone
+	}
+	if signaturePhrase != "" {
+		out += "\n\nПОДПИСЬ БРЕНДА (можно вписать в конец длинного текста): «" + signaturePhrase + "»"
+	}
+	if defaultCTA != "" {
+		out += "\n\nПРЕДПОЧТИТЕЛЬНЫЙ ПРИЗЫВ К ДЕЙСТВИЮ (CTA): «" + defaultCTA + "» — используй вместо обобщённого, когда уместно."
+	}
+	if len(forbiddenWords) > 0 {
+		joined := ""
+		for i, w := range forbiddenWords {
+			if i > 0 {
+				joined += ", "
+			}
+			joined += `"` + w + `"`
+		}
+		out += "\n\nЗАПРЕЩЁННЫЕ СЛОВА/ТЕМЫ (никогда не используй и не намекай): " + joined
+	}
+	return out
+}
+
 // --- tagging ------------------------------------------------------------
 
 // SchemaTagging — Gemini responseSchema for product tagging.

@@ -14,7 +14,13 @@ type Farmer struct {
 	Channels       []string  `json:"channels"`
 	AudienceFocus  []string  `json:"audience_focus"`
 	RiskAppetite   string    `json:"risk_appetite"`
-	CreatedAt      time.Time `json:"created_at"`
+	// Brand-voice profile (Settings page). All optional. Drives the AI
+	// system prompt — see ai.BuildSystemPromptForFarmer.
+	BrandVoice      string   `json:"brand_voice,omitempty"`      // warm|business|folksy|sharp|expert
+	SignaturePhrase string   `json:"signature_phrase,omitempty"` // appended to long-form
+	ForbiddenWords  []string `json:"forbidden_words,omitempty"`  // negative constraint in prompts
+	DefaultCTA      string   `json:"default_cta,omitempty"`      // overrides generic CTA
+	CreatedAt       time.Time `json:"created_at"`
 	ProductCount   int       `json:"product_count,omitempty"`
 	Categories     []string  `json:"categories,omitempty"`
 	// AIReadinessScore 0-100 — % of SKUs with ≥3 distinct tags.

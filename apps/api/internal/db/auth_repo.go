@@ -327,6 +327,38 @@ func (r *Repo) RevokeSession(id string) error {
 	return err
 }
 
+// RevokeOtherUserSessions revokes every session for `userID` except the
+// one passed in `keepSessionID`. Powers the Settings "sign out
+// everywhere else" action — the calling tab stays logged in, every
+// other device is kicked.
+func (r *Repo) RevokeOtherUserSessions(userID, keepSessionID string) error {
+	if userID == "" {
+		return nil
+	}
+	_, err := r.c.Query(
+		`UPDATE session SET revoked = true
+		 WHERE user = type::thing("app_user", $uid)
+		   AND meta::id(id) != $keep;`,
+		map[string]any{"uid": userID, "keep": keepSessionID},
+	)
+	return err
+}
+
+// UpdateUserPassword writes a new bcrypt hash for a user. Caller is
+// responsible for verifying the current password first. Does NOT revoke
+// existing sessions — that's a policy decision made by the handler
+// (Settings page leaves them alive; an admin reset would revoke).
+func (r *Repo) UpdateUserPassword(userID, newHash string) error {
+	if userID == "" || newHash == "" {
+		return fmt.Errorf("userID and newHash required")
+	}
+	_, err := r.c.Query(
+		`UPDATE type::thing("app_user", $uid) SET password_hash = $h;`,
+		map[string]any{"uid": userID, "h": newHash},
+	)
+	return err
+}
+
 // RevokeUserSessions revokes every session belonging to a user. Used by
 // admin "kick user" action and on password change.
 func (r *Repo) RevokeUserSessions(userID string) error {

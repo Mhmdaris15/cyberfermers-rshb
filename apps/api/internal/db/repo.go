@@ -102,6 +102,42 @@ func (r *Repo) ResolveFarmer(idOrOrg string) (string, error) {
 
 // ----- farmer -----------------------------------------------------------
 
+// UpdateFarmer applies a partial patch by SurrealDB MERGE. Only keys
+// present in `patch` are touched; anything else stays as-is. Returns
+// the updated farmer.
+//
+// The patch is validated at the handler layer — this repo method
+// trusts the caller. Empty patch is a no-op (returns the row as-is).
+func (r *Repo) UpdateFarmer(idOrOrg string, patch map[string]any) (*models.Farmer, error) {
+	full, err := r.ResolveFarmer(idOrOrg)
+	if err != nil {
+		return nil, err
+	}
+	if len(patch) > 0 {
+		if _, err := r.c.Query(
+			`UPDATE $f MERGE $p;`,
+			map[string]any{"f": full, "p": patch},
+		); err != nil {
+			return nil, err
+		}
+	}
+	res, err := r.c.Query(
+		`SELECT *, meta::id(id) AS id FROM $f LIMIT 1;`,
+		map[string]any{"f": full},
+	)
+	if err != nil {
+		return nil, err
+	}
+	var rows []models.Farmer
+	if err := decodeQueryRows(res, &rows); err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, fmt.Errorf("farmer not found after update")
+	}
+	return &rows[0], nil
+}
+
 func (r *Repo) UpsertFarmer(f *models.Farmer) (string, error) {
 	q := `
 	  LET $row = (SELECT id FROM farmer WHERE organization_id = $oid LIMIT 1);

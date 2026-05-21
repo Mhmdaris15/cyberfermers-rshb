@@ -68,6 +68,10 @@ func Register(r *gin.Engine, d *Deps) {
 
 		authed.GET("/farmers", d.ListFarmers)
 		authed.GET("/farmers/:id", d.GetFarmer)
+		// Settings page — partial farmer patch + account self-service.
+		authed.PATCH("/farmers/:id", d.UpdateFarmer)
+		authed.POST("/auth/change-password", d.ChangePassword)
+		authed.POST("/auth/sessions/revoke-others", d.RevokeOtherSessions)
 		authed.GET("/farmers/:id/products", d.GetFarmerProducts)
 		// product-tag CRUD + AI suggestions (see handlers/tags.go).
 		// :productId is the bare SurrealDB id (no `product:` prefix).

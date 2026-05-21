@@ -17,9 +17,18 @@ export interface Farmer {
   channels?: string[];
   audience_focus?: string[];
   risk_appetite?: string;
+  /** Brand voice preset — drives the AI system prompt. See SettingsPage. */
+  brand_voice?: string;
+  signature_phrase?: string;
+  forbidden_words?: string[];
+  default_cta?: string;
   /** Populated when the list was fetched via `listFarmers({ withCounts: true })`. */
   product_count?: number;
   categories?: string[];
+  /** AI readiness % (0-100) — populated when withCounts is true. */
+  ai_readiness_score?: number;
+  /** Seasonal-opportunity % (0-100) — populated when withCounts is true. */
+  seasonal_opportunity_score?: number;
 }
 
 export interface Product {

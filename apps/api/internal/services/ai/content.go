@@ -74,6 +74,13 @@ func (s *ContentService) GenerateAll(
 	gens := channelGenerators()
 	farmerStr := farmer.ShopName
 	productsBlock := productsBullet(products)
+	// Decorate SystemRU with this farmer's brand voice + signature +
+	// forbidden words + CTA so every channel in the fan-out reflects the
+	// Settings page choices. Falls back to SystemRU unchanged when nothing
+	// is configured — backwards-compatible with existing farmers.
+	system := BuildSystemPromptForFarmer(
+		farmer.BrandVoice, farmer.SignaturePhrase, farmer.DefaultCTA, farmer.ForbiddenWords,
+	)
 
 	type result struct {
 		ch  models.Channel
@@ -95,7 +102,7 @@ func (s *ContentService) GenerateAll(
 				prompt += variantHint(variant)
 			}
 			out := map[string]any{}
-			if err := s.AI.GenerateJSON(ctx, SystemRU, prompt, gen.schema, &out); err != nil {
+			if err := s.AI.GenerateJSON(ctx, system, prompt, gen.schema, &out); err != nil {
 				log.Warn().Err(err).Str("channel", string(ch)).Msg("content generation failed; fallback")
 				results <- result{ch: ch, raw: s.fallbackOne(ch, farmer, event, products), err: err}
 				return
