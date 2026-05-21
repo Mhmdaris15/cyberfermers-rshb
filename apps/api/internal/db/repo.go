@@ -421,14 +421,30 @@ func (r *Repo) DeleteTag(productID, tag string) error {
 // ListAllTags returns every distinct tag in the corpus, used by the FE
 // autocomplete when a user starts typing a new tag. Cheap query — there
 // are ≈80 canonical tags in the seed catalog.
+//
+// We decode into a struct + reshape rather than `SELECT VALUE`. SurrealDB
+// 2.x returns GROUP BY rows as objects regardless of the VALUE keyword,
+// so unmarshalling straight into []string fails with "cannot unmarshal
+// object into Go value of type string".
 func (r *Repo) ListAllTags() ([]string, error) {
-	res, err := r.c.Query(`SELECT VALUE tag FROM product_tag GROUP BY tag ORDER BY tag;`, nil)
+	res, err := r.c.Query(
+		`SELECT tag FROM product_tag GROUP BY tag ORDER BY tag;`,
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
-	var out []string
-	if err := decodeQueryRows(res, &out); err != nil {
+	var rows []struct {
+		Tag string `json:"tag"`
+	}
+	if err := decodeQueryRows(res, &rows); err != nil {
 		return nil, err
+	}
+	out := make([]string, 0, len(rows))
+	for _, r := range rows {
+		if r.Tag != "" {
+			out = append(out, r.Tag)
+		}
 	}
 	return out, nil
 }
