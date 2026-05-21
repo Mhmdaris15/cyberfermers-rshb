@@ -16,6 +16,7 @@ import {
   Menu,
   X,
   ArrowLeftRight,
+  ExternalLink,
 } from "lucide-react";
 import { useTranslate } from "@tolgee/react";
 import { cn } from "@/lib/utils";
@@ -102,8 +103,22 @@ export function AppShell() {
             </button>
             <div className="flex flex-col leading-tight">
               <div className="smallcaps text-[10px] text-ink-mute">{t("nav.farmer.label")}</div>
-              <div className="truncate text-sm font-semibold">
-                {farmer.data?.shop_name ?? `#${farmerId}`}
+              <div className="flex items-center gap-1.5">
+                <span className="truncate text-sm font-semibold">
+                  {farmer.data?.shop_name ?? `#${farmerId}`}
+                </span>
+                {farmer.data?.url && (
+                  <a
+                    href={farmer.data.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex h-5 w-5 items-center justify-center rounded text-ink-mute transition-colors hover:bg-bg-elevated hover:text-leaf focus-ring"
+                    aria-label={t("nav.farmer.openOnMarketplace")}
+                    title={farmer.data.url}
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
               </div>
             </div>
             <Link

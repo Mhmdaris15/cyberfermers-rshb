@@ -27,6 +27,7 @@
   "nav.farmer.label": "Farmer",
   "nav.farmer.switch": "Switch farmer",
   "nav.farmer.switchShort": "Switch",
+  "nav.farmer.openOnMarketplace": "Open on marketplace",
   "nav.openMenu": "Open menu",
   "nav.geminiConnected": "Gemini connected",
   "nav.geminiBlurb": "Structured JSON output. Any channel — one click away.",

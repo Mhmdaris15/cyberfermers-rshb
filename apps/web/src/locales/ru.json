@@ -27,6 +27,7 @@
   "nav.farmer.label": "Фермер",
   "nav.farmer.switch": "Сменить фермера",
   "nav.farmer.switchShort": "Сменить",
+  "nav.farmer.openOnMarketplace": "Открыть на маркетплейсе",
   "nav.openMenu": "Открыть меню",
   "nav.geminiConnected": "Gemini подключён",
   "nav.geminiBlurb": "Структурный JSON-вывод. Любой канал — в один клик.",
