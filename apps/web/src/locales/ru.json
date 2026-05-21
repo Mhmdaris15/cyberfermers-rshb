@@ -310,5 +310,31 @@
 
   "lang.switcher.label": "Язык",
   "lang.ru": "Русский",
-  "lang.en": "English"
+  "lang.en": "English",
+
+  "products.totalLabel": "товаров фермера",
+  "products.untagged.suffix": "без тегов",
+  "products.untagged.badge": "БЕЗ ТЕГОВ",
+  "products.search.placeholder": "Поиск по названию, категории или тегу…",
+  "products.filter.all": "Все",
+  "products.filter.untagged": "Без тегов",
+  "products.tags.add.placeholder": "+ тег",
+  "products.tags.add.new": "создать тег",
+  "products.tags.addFailed": "Не удалось добавить тег",
+  "products.tags.removeFailed": "Не удалось убрать тег",
+  "products.tags.suggest.cta": "AI-подсказка",
+  "products.tags.suggest.eyebrow": "AI-предложение",
+  "products.tags.suggest.helper": "Выберите теги, которые подходят. Применяются только отмеченные.",
+  "products.tags.suggest.loading": "AI подбирает теги…",
+  "products.tags.suggest.empty": "AI не нашёл новых тегов сверх уже добавленных.",
+  "products.tags.suggest.applyCta": "Применить",
+  "products.tags.suggest.applied": "Теги добавлены",
+  "products.tags.suggest.failed": "Не удалось получить подсказку",
+  "products.tags.suggest.selectedSuffix": "выбрано",
+  "products.tags.bulk.cta": "AI-тегирование пропусков",
+  "products.tags.bulk.confirm": "Запустить AI-тегирование для {n} товаров без тегов? Действие необратимо — теги будут применены автоматически.",
+  "products.tags.bulk.done": "Готово",
+  "products.tags.bulk.failed": "Ошибка bulk-тегирования",
+  "products.tags.bulk.products": "товаров",
+  "products.tags.bulk.tags": "тегов"
 }

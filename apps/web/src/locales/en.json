@@ -310,5 +310,31 @@
 
   "lang.switcher.label": "Language",
   "lang.ru": "Русский",
-  "lang.en": "English"
+  "lang.en": "English",
+
+  "products.totalLabel": "products in catalog",
+  "products.untagged.suffix": "untagged",
+  "products.untagged.badge": "UNTAGGED",
+  "products.search.placeholder": "Search by name, category, or tag…",
+  "products.filter.all": "All",
+  "products.filter.untagged": "Untagged",
+  "products.tags.add.placeholder": "+ tag",
+  "products.tags.add.new": "create tag",
+  "products.tags.addFailed": "Couldn't add tag",
+  "products.tags.removeFailed": "Couldn't remove tag",
+  "products.tags.suggest.cta": "AI suggest",
+  "products.tags.suggest.eyebrow": "AI suggestion",
+  "products.tags.suggest.helper": "Pick the tags that fit. Only selected ones are applied.",
+  "products.tags.suggest.loading": "AI is picking tags…",
+  "products.tags.suggest.empty": "AI found no new tags beyond what's already applied.",
+  "products.tags.suggest.applyCta": "Apply",
+  "products.tags.suggest.applied": "Tags added",
+  "products.tags.suggest.failed": "Couldn't fetch suggestions",
+  "products.tags.suggest.selectedSuffix": "selected",
+  "products.tags.bulk.cta": "Auto-tag untagged",
+  "products.tags.bulk.confirm": "Auto-tag {n} products with no tags? This applies tags immediately and is irreversible.",
+  "products.tags.bulk.done": "Done",
+  "products.tags.bulk.failed": "Bulk tagging error",
+  "products.tags.bulk.products": "products",
+  "products.tags.bulk.tags": "tags"
 }

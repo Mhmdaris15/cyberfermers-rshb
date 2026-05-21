@@ -381,6 +381,58 @@ func (r *Repo) UpsertTag(productID, tag, source string, confidence float64) erro
 	return err
 }
 
+// GetProduct returns a single product by bare id (no `product:` prefix
+// required — `ensureRecordID` handles both forms). Returns (nil, nil)
+// when no row matches so callers can distinguish "not found" from a
+// transport error without inspecting error strings.
+func (r *Repo) GetProduct(productID string) (*models.Product, error) {
+	full := ensureRecordID(productID, "product")
+	res, err := r.c.Query(
+		`SELECT *, meta::id(id) AS id, meta::id(farmer) AS farmer_id FROM $p LIMIT 1;`,
+		map[string]any{"p": full},
+	)
+	if err != nil {
+		return nil, err
+	}
+	var rows []models.Product
+	if err := decodeQueryRows(res, &rows); err != nil {
+		return nil, err
+	}
+	if len(rows) == 0 {
+		return nil, nil
+	}
+	tags, _ := r.ListTagsForProduct(rows[0].ID)
+	rows[0].Tags = tags
+	return &rows[0], nil
+}
+
+// DeleteTag removes a single (product, tag) row regardless of source.
+// Idempotent — deleting a non-existent tag returns nil. Used by the
+// FE chip-editor when the user clicks ×.
+func (r *Repo) DeleteTag(productID, tag string) error {
+	full := ensureRecordID(productID, "product")
+	_, err := r.c.Query(
+		`DELETE FROM product_tag WHERE product = $p AND tag = $t;`,
+		map[string]any{"p": full, "t": strings.ToLower(strings.TrimSpace(tag))},
+	)
+	return err
+}
+
+// ListAllTags returns every distinct tag in the corpus, used by the FE
+// autocomplete when a user starts typing a new tag. Cheap query — there
+// are ≈80 canonical tags in the seed catalog.
+func (r *Repo) ListAllTags() ([]string, error) {
+	res, err := r.c.Query(`SELECT VALUE tag FROM product_tag GROUP BY tag ORDER BY tag;`, nil)
+	if err != nil {
+		return nil, err
+	}
+	var out []string
+	if err := decodeQueryRows(res, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (r *Repo) ListTagsForProduct(productID string) ([]string, error) {
 	full := ensureRecordID(productID, "product")
 	res, err := r.c.Query(`SELECT tag FROM product_tag WHERE product = $p;`,

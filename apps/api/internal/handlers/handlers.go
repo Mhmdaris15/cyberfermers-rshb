@@ -15,6 +15,7 @@ import (
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/insights"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/plan"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/recommendation"
+	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/tagging"
 )
 
 // Deps is the dependency bundle passed to every handler.
@@ -25,6 +26,7 @@ type Deps struct {
 	Plan        *plan.Service
 	Insights    *insights.Engine
 	ChatSvc     *chat.Service
+	Tagger      *tagging.Tagger
 	GeminiModel string // used as audit label on persisted GeneratedContent rows
 
 	// Auth knobs — populated from config at boot.
@@ -67,6 +69,14 @@ func Register(r *gin.Engine, d *Deps) {
 		authed.GET("/farmers", d.ListFarmers)
 		authed.GET("/farmers/:id", d.GetFarmer)
 		authed.GET("/farmers/:id/products", d.GetFarmerProducts)
+		// product-tag CRUD + AI suggestions (see handlers/tags.go).
+		// :productId is the bare SurrealDB id (no `product:` prefix).
+		authed.POST("/farmers/:id/products/:productId/tags", d.AddProductTag)
+		authed.POST("/farmers/:id/products/:productId/tags/batch", d.AddProductTagsBatch)
+		authed.DELETE("/farmers/:id/products/:productId/tags/:tag", d.RemoveProductTag)
+		authed.POST("/farmers/:id/products/:productId/tags/suggest", d.SuggestProductTags)
+		authed.POST("/farmers/:id/products/tags/auto-tag-missing", d.AutoTagMissing)
+		authed.GET("/farmers/:id/products/tags/vocabulary", d.GetTagVocabulary)
 		authed.GET("/farmers/:id/calendar", d.GetCalendar)
 		authed.GET("/farmers/:id/plan", d.GetPlan)
 		authed.GET("/farmers/:id/insights", d.GetInsights)

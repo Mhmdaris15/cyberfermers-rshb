@@ -59,6 +59,121 @@ func (t *Tagger) TagOne(ctx context.Context, p models.Product) ([]string, error)
 	return dedup(append(combined, out.Tags...)), nil
 }
 
+// Suggestion is one candidate tag returned by SuggestForProduct.
+// `Source` is "rule" (deterministic match) or "llm" (Gemini), `Confidence`
+// is 1.0 for rules and the model's self-reported number for LLM.
+// `Existing` is true if the tag is already persisted on this product —
+// the FE uses it to render the chip as "already applied" so the user
+// doesn't double-add.
+type Suggestion struct {
+	Tag        string  `json:"tag"`
+	Source     string  `json:"source"`
+	Confidence float64 `json:"confidence"`
+	Existing   bool    `json:"existing"`
+}
+
+// SuggestForProduct returns tag suggestions WITHOUT persisting them.
+// Powers the suggest-then-approve UX: rule tags come back first (free,
+// instant), LLM tags fill the rest up to ~6 total suggestions. The FE
+// renders them as chips the user clicks to accept.
+//
+// Existing-on-product tags are included with Existing=true so the FE
+// can grey them out — useful when the user wants "more like this".
+func (t *Tagger) SuggestForProduct(ctx context.Context, p models.Product) ([]Suggestion, error) {
+	existing, _ := t.Repo.ListTagsForProduct(p.ID)
+	existingSet := map[string]bool{}
+	for _, e := range existing {
+		existingSet[strings.ToLower(e)] = true
+	}
+
+	out := make([]Suggestion, 0, 8)
+	for _, tag := range RuleTags(p) {
+		out = append(out, Suggestion{
+			Tag:        tag,
+			Source:     "rule",
+			Confidence: 1.0,
+			Existing:   existingSet[tag],
+		})
+	}
+
+	if t.AI == nil || t.AI.APIKey == "" {
+		return out, nil
+	}
+
+	cctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	var resp struct {
+		Tags       []string `json:"tags"`
+		Confidence float64  `json:"confidence"`
+	}
+	if err := t.AI.GenerateJSON(cctx, ai.SystemRU, ai.TaggingPrompt(p.Name, p.Description, p.Category), ai.SchemaTagging, &resp); err != nil {
+		log.Warn().Err(err).Str("product", p.Name).Msg("llm suggest failed; returning rule tags only")
+		return out, nil
+	}
+	conf := resp.Confidence
+	if conf <= 0 || conf > 1 {
+		conf = 0.7
+	}
+	seen := map[string]bool{}
+	for _, s := range out {
+		seen[s.Tag] = true
+	}
+	for _, tag := range resp.Tags {
+		norm := strings.ToLower(strings.TrimSpace(tag))
+		if norm == "" || seen[norm] {
+			continue
+		}
+		seen[norm] = true
+		out = append(out, Suggestion{
+			Tag:        norm,
+			Source:     "llm",
+			Confidence: conf,
+			Existing:   existingSet[norm],
+		})
+	}
+	return out, nil
+}
+
+// AutoTagMissingResult reports the bulk-tagging pass for one farmer.
+type AutoTagMissingResult struct {
+	ProductsConsidered int `json:"products_considered"`
+	ProductsTouched    int `json:"products_touched"`
+	TagsAdded          int `json:"tags_added"`
+	LLMCalls           int `json:"llm_calls"`
+}
+
+// AutoTagMissing runs TagOne on every product that currently has fewer
+// than `minTags` tags. Persists the new tags as the underlying TagOne
+// already does. Returns counts so the FE can show the user a meaningful
+// confirmation toast ("36 products tagged, 84 new tags").
+func (t *Tagger) AutoTagMissing(ctx context.Context, products []models.Product, minTags int) (AutoTagMissingResult, error) {
+	if minTags <= 0 {
+		minTags = 3
+	}
+	res := AutoTagMissingResult{ProductsConsidered: len(products)}
+	for _, p := range products {
+		existing, _ := t.Repo.ListTagsForProduct(p.ID)
+		if len(existing) >= minTags {
+			continue
+		}
+		before := len(existing)
+		newTags, err := t.TagOne(ctx, p)
+		if err != nil {
+			continue
+		}
+		added := len(newTags) - before
+		if added > 0 {
+			res.ProductsTouched++
+			res.TagsAdded += added
+		}
+		if before < 3 {
+			res.LLMCalls++
+		}
+	}
+	return res, nil
+}
+
 // RuleTags is a deterministic baseline. Lightweight Cyrillic substring matching;
 // good enough to cover ~70% of obvious cases (honey → "honey", "пасха" → "easter", …).
 func RuleTags(p models.Product) []string {

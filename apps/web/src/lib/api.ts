@@ -43,6 +43,59 @@ export const getFarmer = (id: string) =>
 export const getFarmerProducts = (id: string) =>
   api.get<{ products: Product[]; count: number }>(`/api/farmers/${id}/products`).then((r) => r.data);
 
+// ------ product tags ------------------------------------------------------
+
+export interface TagSuggestion {
+  tag: string;
+  source: "rule" | "llm";
+  confidence: number;
+  existing: boolean;
+}
+
+export interface AutoTagResult {
+  products_considered: number;
+  products_touched: number;
+  tags_added: number;
+  llm_calls: number;
+}
+
+export const addProductTag = (farmerId: string, productId: string, tag: string) =>
+  api
+    .post<{ tags: string[] }>(`/api/farmers/${farmerId}/products/${productId}/tags`, { tag })
+    .then((r) => r.data.tags);
+
+export const addProductTagsBatch = (farmerId: string, productId: string, tags: string[]) =>
+  api
+    .post<{ tags: string[]; added: number }>(
+      `/api/farmers/${farmerId}/products/${productId}/tags/batch`,
+      { tags },
+    )
+    .then((r) => r.data);
+
+export const removeProductTag = (farmerId: string, productId: string, tag: string) =>
+  api
+    .delete<{ tags: string[] }>(
+      `/api/farmers/${farmerId}/products/${productId}/tags/${encodeURIComponent(tag)}`,
+    )
+    .then((r) => r.data.tags);
+
+export const suggestProductTags = (farmerId: string, productId: string) =>
+  api
+    .post<{ suggestions: TagSuggestion[]; count: number }>(
+      `/api/farmers/${farmerId}/products/${productId}/tags/suggest`,
+    )
+    .then((r) => r.data.suggestions);
+
+export const autoTagMissing = (farmerId: string) =>
+  api
+    .post<AutoTagResult>(`/api/farmers/${farmerId}/products/tags/auto-tag-missing`)
+    .then((r) => r.data);
+
+export const getTagVocabulary = (farmerId: string) =>
+  api
+    .get<{ tags: string[]; count: number }>(`/api/farmers/${farmerId}/products/tags/vocabulary`)
+    .then((r) => r.data.tags);
+
 // ------ events -----------------------------------------------------------
 export const listEvents = (from?: string, to?: string) =>
   api.get<{ events: CalendarEvent[] }>("/api/events", { params: { from, to } }).then((r) => r.data.events);

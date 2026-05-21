@@ -20,6 +20,7 @@ import (
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/insights"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/plan"
 	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/recommendation"
+	"github.com/rshb/svoe-rodnoe-calendar/api/internal/services/tagging"
 )
 
 func main() {
@@ -110,6 +111,7 @@ func main() {
 	planSvc := plan.New(repo)
 	insightsEngine := insights.New(repo)
 	chatSvc := chat.New(repo, aiClient, insightsEngine, planSvc)
+	tagger := tagging.New(repo, aiClient, false)
 
 	gin.SetMode(gin.ReleaseMode)
 	r := gin.New()
@@ -155,6 +157,7 @@ func main() {
 		Repo: repo, Reco: reco, Content: contentSvc, Plan: planSvc,
 		Insights:           insightsEngine,
 		ChatSvc:            chatSvc,
+		Tagger:             tagger,
 		GeminiModel:        cfg.GeminiModel,
 		SessionTTL:         time.Duration(cfg.AuthSessionTTLHours) * time.Hour,
 		LoginRateLimit:     cfg.AuthLoginRateLimit,
