@@ -1,4 +1,4 @@
-import { Navigate, Outlet, Route, Routes } from "react-router-dom";
+import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { Landing } from "./pages/Landing";
 import { FarmersPage } from "./pages/FarmersPage";
 import { AppShell } from "./components/layout/AppShell";
@@ -17,12 +17,33 @@ import { Login } from "./pages/Login";
 import { Forbidden } from "./pages/Forbidden";
 import { AdminUsers } from "./pages/AdminUsers";
 import { AdminSessions } from "./pages/AdminSessions";
+import { AdminMaintenancePage } from "./pages/AdminMaintenancePage";
+import { MaintenanceScreen } from "./pages/MaintenanceScreen";
 import { RequireAuth } from "./components/auth/RequireAuth";
 import { RequireAdmin } from "./components/auth/RequireAdmin";
 import { AdminLayout } from "./components/auth/AdminLayout";
+import { useMaintenance } from "./lib/maintenance";
+
+// MaintenanceGate intercepts every route when the global gate is on.
+// Two exceptions live above the gate:
+//   1. /admin/maintenance     — the kill-switch surface itself
+//   2. /login                 — needed to authenticate before reaching #1
+// Everything else (Landing, farmer pages, other admin tools) is replaced
+// by the public MaintenanceScreen until the toggle flips back.
+function MaintenanceGate({ children }: { children: React.ReactNode }) {
+  const state = useMaintenance();
+  const loc = useLocation();
+  const bypassPaths = ["/admin/maintenance", "/login"];
+  const isBypass = bypassPaths.some((p) => loc.pathname.startsWith(p));
+  if (state.maintenance && !isBypass) {
+    return <MaintenanceScreen state={state} />;
+  }
+  return <>{children}</>;
+}
 
 export function App() {
   return (
+    <MaintenanceGate>
     <Routes>
       {/* ── public ─────────────────────────────────────────────── */}
       <Route path="/" element={<Landing />} />
@@ -55,10 +76,12 @@ export function App() {
           <Route index element={<Navigate to="users" replace />} />
           <Route path="users" element={<AdminUsers />} />
           <Route path="sessions" element={<AdminSessions />} />
+          <Route path="maintenance" element={<AdminMaintenancePage />} />
         </Route>
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </MaintenanceGate>
   );
 }

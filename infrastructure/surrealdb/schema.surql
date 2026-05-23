@@ -402,3 +402,17 @@ DEFINE FIELD revoked      ON session TYPE bool DEFAULT false;
 DEFINE INDEX session_token_unique ON session FIELDS token_hash UNIQUE;
 DEFINE INDEX session_user         ON session FIELDS user;
 DEFINE INDEX session_expires      ON session FIELDS expires_at;
+
+-- =============================================================
+--   SYSTEM CONFIG — single-row store for ops-level toggles.
+--   Currently holds only the maintenance-mode state, but designed
+--   to absorb future global flags (read-only mode, feature gates).
+--
+--   Convention: every row is fetched by a known fixed id, e.g.
+--   `system_config:maintenance`. Never enumerate this table; always
+--   point-fetch by id. Updates use MERGE so partial writes preserve
+--   sibling fields.
+-- =============================================================
+DEFINE TABLE system_config SCHEMALESS;
+DEFINE FIELD updated_at ON system_config TYPE datetime DEFAULT time::now() VALUE time::now();
+DEFINE FIELD updated_by ON system_config TYPE option<record<app_user>>;

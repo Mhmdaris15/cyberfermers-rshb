@@ -53,6 +53,11 @@ func Register(r *gin.Engine, d *Deps) {
 		// Login is the ONLY pre-auth endpoint. Everything else is gated.
 		api.POST("/auth/login", d.Login)
 
+		// Maintenance / system status — PUBLIC, no auth required.
+		// The FE landing page + global axios interceptor both consume
+		// this to detect when the gate flips on or off.
+		api.GET("/system/status", d.SystemStatus)
+
 		// ── authed ───────────────────────────────────────────────────
 		// `nil` Repo (e.g. in tests) means the auth middleware can't run;
 		// guarded so health_test.go with an empty Deps still passes.
@@ -164,6 +169,12 @@ func Register(r *gin.Engine, d *Deps) {
 		admin.DELETE("/users/:id", d.DeleteUser)
 		admin.GET("/sessions", d.ListSessions)
 		admin.DELETE("/sessions/:id", d.RevokeSession)
+
+		// Maintenance kill-switch. The path prefix /api/admin/maintenance
+		// is whitelisted by the maintenance middleware so admins can keep
+		// flipping the toggle even when the gate is on.
+		admin.GET("/maintenance", d.GetMaintenance)
+		admin.POST("/maintenance", d.SetMaintenance)
 	}
 }
 

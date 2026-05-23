@@ -126,6 +126,11 @@ func main() {
 	if len(cfg.CORSOrigins) == 0 {
 		log.Warn().Msg("API_CORS_ORIGINS is empty — every browser request will be rejected")
 	}
+	// Maintenance gate runs AFTER CORS is set up (so 503s carry the
+	// Access-Control-Allow-Origin header — without it the browser can't
+	// read the response body and the FE has no way to detect the gate).
+	// It runs BEFORE handlers so EVERY request hits it, including ones
+	// later mounted under /api.
 	r.Use(cors.New(cors.Config{
 		AllowOriginFunc: func(origin string) bool {
 			norm := strings.ToLower(strings.TrimRight(strings.TrimSpace(origin), "/"))
@@ -152,6 +157,11 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
+
+	// Maintenance gate — must run AFTER CORS so 503 responses carry the
+	// allow-origin header (otherwise the browser can't read the body and
+	// the FE can't switch to the maintenance screen).
+	r.Use(middleware.Maintenance(repo))
 
 	handlers.Register(r, &handlers.Deps{
 		Repo: repo, Reco: reco, Content: contentSvc, Plan: planSvc,

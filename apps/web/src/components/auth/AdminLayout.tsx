@@ -1,5 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { ArrowLeft, LogOut, ShieldAlert, Users2, Network } from "lucide-react";
+import { ArrowLeft, LogOut, Power, ShieldAlert, Users2, Network } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 
 // AdminLayout — chrome shared by /admin/users and /admin/sessions.
@@ -55,6 +55,7 @@ export function AdminLayout() {
           <nav className="flex items-center gap-1 rounded-md border border-line bg-bg-elevated/60 p-1 text-sm">
             <SubNav to="/admin/users" icon={<Users2 className="h-3.5 w-3.5" />} label="Пользователи" />
             <SubNav to="/admin/sessions" icon={<Network className="h-3.5 w-3.5" />} label="Сессии" />
+            <SubNav to="/admin/maintenance" icon={<Power className="h-3.5 w-3.5" />} label="Обслуживание" />
           </nav>
 
           <div className="flex items-center gap-3">

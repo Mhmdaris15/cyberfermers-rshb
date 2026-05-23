@@ -378,3 +378,23 @@ type BoardSummary struct {
 	Completed int    `json:"completed"`
 	Overdue   int    `json:"overdue"`   // due_date < now() && column != 'completed'
 }
+
+// ---- system config -------------------------------------------------
+//
+// MaintenanceConfig is the wire + DB shape of `system_config:maintenance`.
+// Always point-fetched by that fixed id. ETA is a pointer so an unset
+// value round-trips as JSON null instead of zero-time.
+//
+// ReasonPreset ∈ {"", scheduled, deploy, migration, incident}; an empty
+// string means "no preset chosen". MessageRU / MessageEN are optional
+// admin overrides that supersede the preset's stock message on the FE.
+type MaintenanceConfig struct {
+	Enabled          bool       `json:"enabled"`
+	ReasonPreset     string     `json:"reason_preset"`
+	ETA              *time.Time `json:"eta,omitempty"`
+	MessageRU        string     `json:"message_ru,omitempty"`
+	MessageEN        string     `json:"message_en,omitempty"`
+	UpdatedAt        time.Time  `json:"updated_at,omitempty"`
+	UpdatedByID      *string    `json:"updated_by_id,omitempty"`
+	UpdatedByName    *string    `json:"updated_by_name,omitempty"`
+}

@@ -128,6 +128,41 @@ export const revokeOtherSessions = () =>
     .post<{ ok: boolean; kept_session_id: string }>(`/api/auth/sessions/revoke-others`)
     .then((r) => r.data);
 
+// ------ system / maintenance --------------------------------------------
+
+export type ReasonPreset = "" | "scheduled" | "deploy" | "migration" | "incident";
+
+export interface SystemStatus {
+  maintenance: boolean;
+  reason_preset?: ReasonPreset;
+  eta?: string;          // RFC3339, optional
+  message_ru?: string;
+  message_en?: string;
+}
+
+export interface MaintenanceConfig extends SystemStatus {
+  updated_at?: string;
+  updated_by_id?: string | null;
+  updated_by_name?: string | null;
+}
+
+export interface MaintenancePatch {
+  enabled?: boolean;
+  reason_preset?: ReasonPreset;
+  eta?: string | null;   // RFC3339 to set, "" or null to clear
+  message_ru?: string;
+  message_en?: string;
+}
+
+export const getSystemStatus = () =>
+  api.get<SystemStatus>("/api/system/status").then((r) => r.data);
+
+export const getMaintenance = () =>
+  api.get<MaintenanceConfig>("/api/admin/maintenance").then((r) => r.data);
+
+export const setMaintenance = (patch: MaintenancePatch) =>
+  api.post<MaintenanceConfig>("/api/admin/maintenance", patch).then((r) => r.data);
+
 // ------ events -----------------------------------------------------------
 export const listEvents = (from?: string, to?: string) =>
   api.get<{ events: CalendarEvent[] }>("/api/events", { params: { from, to } }).then((r) => r.data.events);
