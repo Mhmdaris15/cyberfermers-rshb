@@ -70,7 +70,7 @@ services:
     # Pre-built image from GHCR — see .github/workflows/build-and-push.yml.
     # Override API_IMAGE in .env.production to pin a specific SHA tag for
     # atomic rollbacks (e.g. ghcr.io/owner/repo-api:sha-abc1234).
-    image: ${API_IMAGE:-ghcr.io/mhmdaris15/svoe-rodnoe-calendar-api:latest}
+    image: ${API_IMAGE:-ghcr.io/mhmdaris15/cyberfermers-rshb-api:latest}
     pull_policy: always
     restart: unless-stopped
     env_file: .env.production
@@ -127,7 +127,7 @@ services:
     # Variables in GitHub (Settings → Secrets and variables → Variables)
     # if you need non-defaults. Same-origin deploys want VITE_API_URL=""
     # so the FE uses relative /api (proxied by nginx to the api service).
-    image: ${WEB_IMAGE:-ghcr.io/mhmdaris15/svoe-rodnoe-calendar-web:latest}
+    image: ${WEB_IMAGE:-ghcr.io/mhmdaris15/cyberfermers-rshb-web:latest}
     pull_policy: always
     restart: unless-stopped
     # No `ports:` binding — Coolify's Traefik proxy already owns host

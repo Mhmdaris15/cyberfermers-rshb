@@ -27,8 +27,8 @@ Driven by `${{ github.repository }}` in the workflow — image paths follow
 the repo slug automatically. For the canonical fork these resolve to:
 
 ```
-ghcr.io/mhmdaris15/svoe-rodnoe-calendar-api:<tag>
-ghcr.io/mhmdaris15/svoe-rodnoe-calendar-web:<tag>
+ghcr.io/mhmdaris15/cyberfermers-rshb-api:<tag>
+ghcr.io/mhmdaris15/cyberfermers-rshb-web:<tag>
 ```
 
 Tags emitted per build:
@@ -44,8 +44,8 @@ Compose pins `:latest` by default. Override per deploy via
 `.env.production`:
 
 ```env
-API_IMAGE=ghcr.io/mhmdaris15/svoe-rodnoe-calendar-api:sha-abc1234
-WEB_IMAGE=ghcr.io/mhmdaris15/svoe-rodnoe-calendar-web:sha-abc1234
+API_IMAGE=ghcr.io/mhmdaris15/cyberfermers-rshb-api:sha-abc1234
+WEB_IMAGE=ghcr.io/mhmdaris15/cyberfermers-rshb-web:sha-abc1234
 ```
 
 ## One-time setup
@@ -100,8 +100,8 @@ change it should only do `pull` + `up -d`. Step-by-step:
    everything `.env.production` used to carry (Surreal creds, Gemini
    key, CORS allowlist, admin bootstrap):
    ```
-   API_IMAGE=ghcr.io/mhmdaris15/svoe-rodnoe-calendar-api:latest
-   WEB_IMAGE=ghcr.io/mhmdaris15/svoe-rodnoe-calendar-web:latest
+   API_IMAGE=ghcr.io/mhmdaris15/cyberfermers-rshb-api:latest
+   WEB_IMAGE=ghcr.io/mhmdaris15/cyberfermers-rshb-web:latest
    SURREAL_USER=…
    SURREAL_PASS=…
    GEMINI_API_KEY=…
@@ -144,8 +144,8 @@ Two routes, depending on urgency:
 - **Fast (≈30s)** — pin to a known-good SHA tag in Coolify env vars,
   click redeploy:
   ```
-  API_IMAGE=ghcr.io/mhmdaris15/svoe-rodnoe-calendar-api:sha-abc1234
-  WEB_IMAGE=ghcr.io/mhmdaris15/svoe-rodnoe-calendar-web:sha-abc1234
+  API_IMAGE=ghcr.io/mhmdaris15/cyberfermers-rshb-api:sha-abc1234
+  WEB_IMAGE=ghcr.io/mhmdaris15/cyberfermers-rshb-web:sha-abc1234
   ```
   Bypasses CI entirely. This is why every commit gets a SHA tag.
 
