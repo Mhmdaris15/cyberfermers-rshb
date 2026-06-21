@@ -1,13 +1,25 @@
 # =====================================================================
 #  PRODUCTION compose file — full containerised stack.
-#  Run with:  docker compose -f docker-compose.prod.yml up -d --build
+#  Run with:  docker compose -f docker-compose.prod.yml up -d
 #
 #  Reads its config from .env.production (NOT .env).
 #
 #  Services:
 #    surrealdb  — persistent KV store on a named volume
-#    api        — Go binary, no host bind mounts
-#    web        — Vite static build behind nginx (proxies /api → api:8080)
+#    api        — Go binary, pulled from GHCR (no host bind mounts)
+#    web        — Vite static build behind nginx (proxies /api → api:8080),
+#                 pulled from GHCR
+#
+#  Image source (build → registry):
+#    Images are built by .github/workflows/build-and-push.yml on every
+#    push to main, and pushed to GHCR. Coolify (or any docker host) only
+#    needs `docker pull` + recreate — NO source checkout, NO local build.
+#
+#    Override the tag at deploy time via env vars in .env.production:
+#       API_IMAGE=ghcr.io/<owner>/<repo>-api:sha-abc1234
+#       WEB_IMAGE=ghcr.io/<owner>/<repo>-web:sha-abc1234
+#    Defaults below pin to `:latest` — pinning to a SHA tag is safer
+#    for rollbacks because it's immutable.
 #
 #  Coolify orchestration rules (the reason this file looks "bare"):
 #    - NO top-level `name:`         — Coolify owns the compose project name.
@@ -55,9 +67,11 @@ services:
         max-file: "3"
 
   api:
-    build:
-      context: .
-      dockerfile: ./apps/api/Dockerfile
+    # Pre-built image from GHCR — see .github/workflows/build-and-push.yml.
+    # Override API_IMAGE in .env.production to pin a specific SHA tag for
+    # atomic rollbacks (e.g. ghcr.io/owner/repo-api:sha-abc1234).
+    image: ${API_IMAGE:-ghcr.io/mhmdaris15/svoe-rodnoe-calendar-api:latest}
+    pull_policy: always
     restart: unless-stopped
     env_file: .env.production
     environment:
@@ -108,15 +122,13 @@ services:
   # so it doesn't run in the same trust boundary as the public-facing stack.
 
   web:
-    build:
-      context: .
-      dockerfile: ./apps/web/Dockerfile
-      args:
-        # Vite injects this at BUILD time, not runtime. Bake it to whatever
-        # public URL terminates TLS in front of the stack. For same-origin
-        # deploys (recommended), leave empty so the FE uses relative /api.
-        VITE_API_URL: ${PUBLIC_API_URL:-}
-        VITE_APP_NAME: ${PUBLIC_APP_NAME:-Свое Родное · Calendar}
+    # Pre-built image from GHCR. VITE_API_URL / VITE_APP_NAME are baked
+    # in at BUILD time inside the CI workflow — set them as repo
+    # Variables in GitHub (Settings → Secrets and variables → Variables)
+    # if you need non-defaults. Same-origin deploys want VITE_API_URL=""
+    # so the FE uses relative /api (proxied by nginx to the api service).
+    image: ${WEB_IMAGE:-ghcr.io/mhmdaris15/svoe-rodnoe-calendar-web:latest}
+    pull_policy: always
     restart: unless-stopped
     # No `ports:` binding — Coolify's Traefik proxy already owns host
     # 80/443 and routes to this container via the Docker network. Use

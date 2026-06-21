@@ -1,0 +1,151 @@
+# =====================================================================
+#  Build & push API + Web images to GHCR.
+#
+#  Triggers:
+#    - push to main (the production line)
+#    - manual via "Run workflow" (workflow_dispatch)
+#
+#  Outputs two images per run:
+#    ghcr.io/<owner>/<repo>-api:<tag>
+#    ghcr.io/<owner>/<repo>-web:<tag>
+#
+#  Tags emitted (via docker/metadata-action):
+#    - "latest"          (only on the default branch)
+#    - "sha-<7-char>"    (every commit — use this for atomic rollback)
+#    - "<branch>"        (one moving tag per branch)
+#    - "v*.*.*"          (only for `vX.Y.Z` git tags)
+#
+#  After both images push, the `deploy` job optionally pings a Coolify
+#  webhook so the stack redeploys without a manual click. The step is
+#  a no-op when `COOLIFY_WEBHOOK_URL` is not set in repo secrets, so
+#  this workflow is safe to ship before Coolify is wired up.
+#
+#  Required repo secrets:
+#    GITHUB_TOKEN              (auto — packages:write is enough)
+#    COOLIFY_WEBHOOK_URL       (optional — enables auto-redeploy)
+#    COOLIFY_WEBHOOK_TOKEN     (optional — bearer token if your Coolify
+#                                          webhook requires auth)
+#
+#  Optional repo variables (Settings → Secrets and variables → Variables):
+#    VITE_API_URL              defaults to "" (same-origin via nginx)
+#    VITE_APP_NAME             defaults to "Свое Родное · Calendar"
+# =====================================================================
+
+name: build-and-push
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
+      - ".gitignore"
+      - ".dockerignore"
+  workflow_dispatch: {}
+
+# Cancel in-flight runs on the same ref when a new commit lands —
+# keeps the queue short and avoids racing two `:latest` pushes.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+# Token scope must include packages:write so the workflow can push to
+# the GitHub Container Registry under the repo owner.
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: build · ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: api
+            dockerfile: ./apps/api/Dockerfile
+            context: .
+          - service: web
+            dockerfile: ./apps/web/Dockerfile
+            context: .
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Generate image name + tags. The metadata action lower-cases the
+      # repo owner so case-sensitive GHCR pulls always resolve.
+      - name: Resolve tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}-${{ matrix.service }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=ref,event=tag
+            type=sha,format=short
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          push: true
+          # Single-arch — Coolify hosts are almost universally amd64,
+          # and skipping arm64 cuts CI time roughly in half. Re-add
+          # "linux/arm64" here if you ever deploy to Graviton/M-series.
+          platforms: linux/amd64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Build args are union'd from repo variables. The API Dockerfile
+          # ignores VITE_* (no matching ARG), so passing them is harmless.
+          build-args: |
+            VITE_API_URL=${{ vars.VITE_API_URL }}
+            VITE_APP_NAME=${{ vars.VITE_APP_NAME || 'Свое Родное · Calendar' }}
+          # GH Actions cache, scoped per service so api/web don't poison
+          # each other's layers. `mode=max` caches every intermediate
+          # stage (the multi-stage builder layer, not just the final).
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,scope=${{ matrix.service }},mode=max
+          provenance: false
+
+  deploy:
+    name: notify Coolify
+    needs: build
+    runs-on: ubuntu-latest
+    # Only on main/tags — manual dispatches and feature branches don't
+    # auto-redeploy production.
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    steps:
+      - name: Ping Coolify webhook
+        env:
+          URL: ${{ secrets.COOLIFY_WEBHOOK_URL }}
+          TOKEN: ${{ secrets.COOLIFY_WEBHOOK_TOKEN }}
+        run: |
+          if [ -z "$URL" ]; then
+            echo "::notice::COOLIFY_WEBHOOK_URL is not set — skipping redeploy."
+            exit 0
+          fi
+          # Coolify's "deploy webhook" accepts an empty POST. If your
+          # webhook is protected, set COOLIFY_WEBHOOK_TOKEN to attach
+          # an Authorization header.
+          if [ -n "$TOKEN" ]; then
+            curl --fail-with-body -sS -X POST -H "Authorization: Bearer $TOKEN" "$URL"
+          else
+            curl --fail-with-body -sS -X POST "$URL"
+          fi
+          echo
+          echo "::notice::Coolify redeploy triggered."

@@ -1,5 +1,10 @@
 # Deployment guide
 
+> **Production deploys now use prebuilt images from GHCR, not source
+> builds.** See `docs/deployment-coolify-ghcr.md` for the current
+> Coolify + GitHub Actions flow. Sections §2 / §3 below describe the
+> legacy "Coolify builds from source" path and are kept for reference.
+
 Two environments, two compose files. Pick the right one for the job.
 
 | Environment | Compose file | What runs in Docker | What runs natively |
